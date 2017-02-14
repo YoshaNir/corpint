@@ -79,6 +79,7 @@ TYPES = {
     'Mutual & Pension Fund/Nominee/Trust/Trustee': ORGANIZATION,
     'Public authority, State, Government': ORGANIZATION,
     'Insurance company': COMPANY,
+    'Company': COMPANY,
 }
 
 
