@@ -3,6 +3,7 @@ from lxml import etree
 from collections import defaultdict
 from pprint import pprint  # noqa
 import zeep
+from zeep.exceptions import TransportError
 
 from corpint.schema import PERSON, COMPANY, ORGANIZATION
 
@@ -228,5 +229,7 @@ def enrich(origin, entity):
         if res is not None:
             for data in res:
                 emit_company(origin, client, session, data)
+    except TransportError as terr:
+        project.log.exception(terr)
     finally:
         client.service.Close(session)
