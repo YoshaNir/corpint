@@ -1,6 +1,6 @@
 from pprint import pprint  # noqa
 from collections import defaultdict
-from Levenshtein import distance
+import Levenshtein
 
 from corpint.integrate.util import sorttuple
 from corpint.schema import choose_best_type
@@ -8,21 +8,8 @@ from corpint.schema import choose_best_type
 
 def choose_best_name(values):
     values = [v.strip() for v in values if v is not None and len(v.strip())]
-    if len(values) == 0:
-        return None
-    if len(set(values)) == 1:
-        return values[0]
-    names = values + [v.lower() for v in values]
-    best_name, best_score = None, None
-    for value in values:
-        score = 0
-        for name in names:
-            score += distance(value, name)
-        if best_score is None or best_score >= score:
-            best_score = score
-            best_name = value
-    return best_name
-
+    if len(values):
+        return Levenshtein.median(values)
 
 def merge_values(values):
     return '; '.join(set([unicode(v) for v in values]))

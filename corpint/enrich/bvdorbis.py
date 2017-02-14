@@ -217,7 +217,7 @@ def enrich(origin, entity):
 
     client = zeep.Client(wsdl=WSDL)
     session = client.service.Open(USERNAME, PASSWORD)
-    origin.log.info('Session ID: %s', session)
+    origin.log.info('Session [%s]: %s', session, entity.get('name'))
     try:
         # print client.service.GetReportSectionIds(session)
         # print client.service.GetAvailableModels(session)
@@ -230,6 +230,6 @@ def enrich(origin, entity):
             for data in res:
                 emit_company(origin, client, session, data)
     except TransportError as terr:
-        project.log.exception(terr)
+        origin.log.exception(terr)
     finally:
         client.service.Close(session)

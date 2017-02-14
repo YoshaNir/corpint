@@ -1,8 +1,11 @@
 from collections import defaultdict
 from itertools import combinations
 from sqlalchemy import Unicode
+import Levenshtein
+import fingerprints
 from corpint.integrate.merge import merge_entities, merge_links  # noqa
-from corpint.integrate.dupe import create_deduper, train_judgement, pairwise_score  # noqa
+from corpint.integrate.dupe import create_deduper, train_judgement
+from corpint.integrate.dupe import pairwise_score, to_record  # noqa
 # from corpint.integrate.dupe import canonicalise
 from corpint.integrate.util import normalize_name, get_clusters
 from corpint.integrate.util import get_decided, merkle, sorttuple
@@ -31,12 +34,29 @@ def generate_candidates(project, threshold=.5):
     decided = get_decided(project)
     project.mappings.delete(judgement=None)
     for ((left_uid, left), (right_uid, right)) in combinations(data.items(), 2):
+        if sorttuple(left_uid, right_uid) in decided:
+            continue
         score = pairwise_score(project, deduper, left, right)
         if score <= threshold:
             continue
+        project.log.info("Candidate [%.3f]: %s <-> %s", score, left['name'], right['name'])
+        project.emit_judgement(left_uid, right_uid, judgement=None, score=score)
+
+
+def generate_candidates_simple(project, threshold=.5):
+    data = {e['uid']: to_record(e) for e in project.entities}
+    decided = get_decided(project)
+    # project.mappings.delete(judgement=None)
+    for ((left_uid, left), (right_uid, right)) in combinations(data.items(), 2):
         if sorttuple(left_uid, right_uid) in decided:
             continue
-        project.log.info("Candidate: %s <[%.3f]> %s", left['name'], score, right['name'])
+        left_name = fingerprints.generate(left.get('name'))
+        right_name = fingerprints.generate(right.get('name'))
+        distance = Levenshtein.distance(left_name, right_name)
+        score = 1 - (distance / float(max(len(left_name), len(right_name))))
+        if score <= threshold:
+            continue
+        project.log.info("Candidate [%.3f]: %s <-> %s", score, left['name'], right['name'])
         project.emit_judgement(left_uid, right_uid, judgement=None, score=score)
 
 
