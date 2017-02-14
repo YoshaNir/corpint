@@ -77,7 +77,7 @@ def create_deduper(project):
         deduper.train()
     except ValueError as verr:
         project.log.error("Cannot train deduper: %r", verr)
-        return
+
     return deduper, data
 
 
