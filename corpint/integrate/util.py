@@ -1,4 +1,9 @@
 from hashlib import sha1
+from normality import normalize
+
+
+def normalize_name(name):
+    return normalize(name, ascii=True)
 
 
 def sorttuple(a, b):
@@ -14,16 +19,16 @@ def merkle(items):
     return uid.hexdigest()
 
 
-def get_judged(project, judgement):
+def get_trained(project, judgement):
     """Find judgements of a particular type in the mappings table."""
     for mapping in project.mappings.find(judgement=judgement):
         yield sorttuple(mapping.get('left_uid'), mapping.get('right_uid'))
 
 
-def get_same_as(project):
-    """Get a list of identity mappings."""
+def get_clusters(project):
+    """Get a list of identity clusters."""
     clusters = []
-    for (a, b) in get_judged(project, True):
+    for (a, b) in get_trained(project, True):
         for cluster in clusters:
             if a in cluster or b in cluster:
                 cluster.add(a)
@@ -31,9 +36,13 @@ def get_same_as(project):
                 break
         else:
             clusters.append(set([a, b]))
+    return clusters
 
+
+def get_same_as(project):
+    """Get a list of identity mappings."""
     same_as = {}
-    for cluster in clusters:
+    for cluster in get_clusters(project):
         for uid in cluster:
             same_as[uid] = cluster
     return same_as
@@ -52,7 +61,7 @@ def get_decided(project):
         for ouid in sames:
             decided.add(sorttuple(uid, ouid))
 
-    for (a, b) in get_judged(project, False):
+    for (a, b) in get_trained(project, False):
         for left in same_as.get(a, set([a])):
             for right in same_as.get(b, set([b])):
                 decided.add(sorttuple(left, right))

@@ -51,10 +51,11 @@ def merge_entity(project, uid_canonical):
 
     merged = {
         'uid': set(),
-        'origin': set()
+        'origin': set(),
+        'address': set()
     }
     for key, values in entity.items():
-        if key in ['uid', 'origin']:
+        if key in ['uid', 'origin', 'address']:
             merged[key].update(values)
             continue
         if key == 'type':
@@ -78,6 +79,13 @@ def merge_entity(project, uid_canonical):
     merged['names'] = set(aliases)
     merged['names'].add(merged['name'])
     return merged
+
+
+def merge_entities(project):
+    for row in project.entities.distinct('uid_canonical'):
+        entity = merge_entity(project, row.get('uid_canonical'))
+        if entity is not None:
+            yield entity
 
 
 def merge_links(project):

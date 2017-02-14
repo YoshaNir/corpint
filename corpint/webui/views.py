@@ -3,6 +3,7 @@ from flask import Blueprint, request, url_for, redirect
 from flask import render_template, current_app
 
 from corpint.integrate import train_judgement
+from corpint.integrate.dupe import to_record
 
 blueprint = Blueprint('base', __name__)
 
@@ -48,7 +49,58 @@ def undecided_post():
     judgement = JUDGEMENTS.get(request.form.get('judgement'))
     left = request.form.get('left')
     right = request.form.get('right')
-    current_app.project.emit_judgement(left, right, judgement)
+    current_app.project.emit_judgement(left, right, judgement, trained=True)
     train_judgement(current_app.project, current_app.deduper,
                     left, right, judgement)
     return undecided_get()
+
+
+@blueprint.route('/scored', methods=['GET'])
+def scored_get(offset=None):
+    """Retrieve two lists of possible equivalences to map."""
+    project = current_app.project
+    offset = offset or int(request.args.get('offset') or 0)
+    args = {
+        'table': project.mappings.table.name,
+        'limit': int(request.args.get('limit') or 25),
+        'offset': offset,
+    }
+    query = """
+        SELECT left_uid, right_uid, score
+        FROM %(table)s WHERE judgement IS NULL
+        ORDER BY score DESC
+        LIMIT %(limit)s
+        OFFSET %(offset)s
+        """ % args
+    candidates = []
+    for data in project.db.query(query):
+        left = project.entities.find_one(uid=data['left_uid'])
+        right = project.entities.find_one(uid=data['right_uid'])
+        if left is None or right is None:
+            continue
+        left, right = to_record(left), to_record(right)
+        candidates.append({
+            'left': left,
+            'right': right,
+            'score': data['score'],
+            'key': 'judgement:%s:%s' % (left['uid'], right['uid']),
+            'fields': common_fields(left, right),
+            'height':  len(common_fields(left, right)) + 2
+        })
+    return render_template('scored.html', candidates=candidates)
+
+
+@blueprint.route('/scored', methods=['POST'])
+def scored_post():
+    """Retrieve two lists of possible equivalences to map."""
+    offset = int(request.args.get('offset') or 0)
+    emit_judgement = current_app.project.emit_judgement
+    for key, value in request.form.items():
+        if not key.startswith('judgement:'):
+            continue
+        _, left, right = key.split(':', 2)
+        judgement = JUDGEMENTS.get(value)
+        if judgement is None:
+            offset += 1
+        emit_judgement(left, right, judgement, trained=False)
+    return redirect(url_for('.scored_get', offset=offset))

@@ -2,7 +2,7 @@ from os import path
 from flask import Flask
 
 from corpint import env
-from corpint.integrate import create_deduper, train_dedupe
+from corpint.integrate import create_deduper
 from corpint.webui.views import blueprint
 
 
@@ -15,6 +15,4 @@ def run_webui(project):
     app.debug = env.DEBUG
     app.project = project
     app.deduper, data = create_deduper(project)
-    # TODO: do we need this?
-    train_dedupe(app.deduper)
     app.run(host='0.0.0.0')

@@ -6,7 +6,7 @@ from sqlalchemy import Boolean, Unicode, Float
 
 from corpint.origin import Origin
 from corpint.schema import TYPES
-from corpint.integrate import integrate, merge_entities, merge_links
+from corpint.integrate import canonicalise, merge_entities, merge_links
 from corpint.enrich import get_enrichers
 from corpint.util import ensure_column
 
@@ -27,7 +27,7 @@ class Project(object):
         ensure_column(self.mappings, 'judgement', Boolean)
         ensure_column(self.mappings, 'score', Float)
         ensure_column(self.mappings, 'judgement_attribution', Unicode)
-        for field in ['name', 'jurisdiction', 'date', 'type', 'origin', 'uid']:
+        for field in ['uid']:
             ensure_column(self.mappings, 'left_' + field, Unicode)
             ensure_column(self.mappings, 'right_' + field, Unicode)
 
@@ -35,9 +35,10 @@ class Project(object):
         return Origin(self, name)
 
     def emit_entity(self, data):
-        uid = data.get('uid') or data.get('uid_canonical')
+        uid = data.get('uid')
         if uid is None:
             raise ValueError("No UID for entity: %r", data)
+        data['uid_canonical'] = data.get('uid_canonical') or uid
 
         if data.get('type') not in TYPES:
             raise ValueError("Invalid entity type: %r", data)
@@ -88,23 +89,28 @@ class Project(object):
             return
         self.links.upsert(data, ['origin', 'source', 'target'])
 
-    def emit_judgement(self, uida, uidb, judgement):
+    def emit_judgement(self, uida, uidb, judgement,
+                       trained=False, score=None):
         if uida is None or uidb is None:
             return
-        self.mappings.upsert({
+        data = {
             'left_uid': max(uida, uidb),
             'right_uid': min(uida, uidb),
-            'judgement': True
-        }, ['left_uid', 'right_uid'])
+            'judgement': judgement,
+            'trained': trained
+        }
+        if score is not None:
+            data['score'] = float(score)
+        self.mappings.upsert(data, ['left_uid', 'right_uid'])
 
     def integrate(self):
-        integrate(self)
+        canonicalise(self)
 
     def iter_merged_entities(self):
         for entity in merge_entities(self):
             yield entity
 
-    def iter_searches(self, min_weight=1):
+    def iter_searches(self, min_weight=0):
         for entity in self.iter_merged_entities():
             if entity['weight'] >= min_weight:
                 yield entity
@@ -113,13 +119,13 @@ class Project(object):
         for link in merge_links(self):
             yield link
 
-    def enrich(self, name, origin=None):
+    def enrich(self, name, origins=[], min_weight=0):
         enricher = get_enrichers().get(name)
         if enricher is None:
             raise RuntimeError("Enricher not found: %s" % name)
         sink = self.origin(name)
-        for entity in self.iter_searches():
-            if origin is not None and origin not in entity.get('origin'):
+        for entity in self.iter_searches(min_weight=min_weight):
+            if len(origins) and not entity.get('origin').intersection(origins):
                 continue
             # pprint(entity)
             enricher(sink, entity)
