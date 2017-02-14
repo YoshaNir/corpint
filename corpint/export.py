@@ -38,6 +38,7 @@ def load_to_neo4j(project, neo4j_uri=None):
         for entity in project.iter_merged_entities():
             label = entity.pop('type', None) or 'Other'
             node = Node(label, **normalise(entity))
+            project.log.info("Node [%s]: %s", label, entity['name'])
             tx.create(node)
             entities[entity['uid']] = node
 
@@ -56,10 +57,15 @@ def load_to_neo4j(project, neo4j_uri=None):
                 rel = Relationship(node, 'ALIAS', alias)
                 tx.create(rel)
 
-            address = entity.get('address')
-            fp = fingerprints.generate(address)
-            if fp is not None:
+            addrfps = set()
+            for address in entity.get('address'):
+                fp = fingerprints.generate(address)
+                if fp is None:
+                    continue
                 fp = fp.replace(' ', '-')
+                if fp in addrfps:
+                    continue
+                addrfps.add(fp)
                 loc = Node('Address', name=address, fp=fp)
                 tx.merge(loc, 'Address', 'fp')
                 rel = Relationship(node, 'LOCATION', alias)

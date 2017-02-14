@@ -55,7 +55,7 @@ def canonicalise(project):
         project.db.query("UPDATE %s SET %s = %s;" % (table.table.name, dest, src))  # noqa
 
     clusters = get_clusters(project)
-    project.log.info("%d clusters", len(clusters))
+    project.log.info("Canonicalise: %d clusters", len(clusters))
     for uids in clusters:
         canon = merkle(uids)
         uids = ', '.join(["'%s'" % u for u in uids])
