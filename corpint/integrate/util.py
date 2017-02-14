@@ -50,13 +50,8 @@ def get_same_as(project):
 
 def get_decided(project):
     "A set of sorted tuples representing all the entity/entity decisions made."
-    judgements = {}
-    for mapping in project.mappings:
-        left, right = mapping.get('left_uid'), mapping.get('right_uid')
-        judgements[(left, right)] = mapping['judgement']
-
-    same_as = get_same_as(project)
     decided = set()
+    same_as = get_same_as(project)
     for uid, sames in same_as.items():
         for ouid in sames:
             decided.add(sorttuple(uid, ouid))

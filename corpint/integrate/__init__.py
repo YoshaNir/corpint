@@ -46,7 +46,7 @@ def generate_candidates(project, threshold=.5):
 def generate_candidates_simple(project, threshold=.5):
     data = {e['uid']: to_record(e) for e in project.entities}
     decided = get_decided(project)
-    # project.mappings.delete(judgement=None)
+    project.mappings.delete(judgement=None)
     for ((left_uid, left), (right_uid, right)) in combinations(data.items(), 2):
         if sorttuple(left_uid, right_uid) in decided:
             continue
