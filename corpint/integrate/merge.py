@@ -52,7 +52,8 @@ def merge_entity(project, uid_canonical):
         elif key == 'name':
             value = choose_best_name(values)
             aliases.update(values)
-            aliases.remove(value)
+            if value in aliases:
+                aliases.remove(value)
         else:
             value = merge_values(values)
         if value is None:
