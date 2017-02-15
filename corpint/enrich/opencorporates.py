@@ -57,6 +57,7 @@ def emit_officer(origin, officer, company_url=None, publisher=None):
         origin.emit_link({
             'source': company_uid,
             'target': officer_uid,
+            'publisher': publisher,
             'summary': officer.get('position'),
             'start_date': officer.get('start_date'),
             'end_date': officer.get('end_date'),
@@ -72,6 +73,7 @@ def emit_company(origin, company):
     company_url = company['opencorporates_url']
     company_uid = origin.uid(company_url)
     source = company.get('source', {})
+    publisher = source.get('publisher')
 
     aliases = set()
     for key in ['alternative_names', 'previous_names']:
@@ -86,7 +88,7 @@ def emit_company(origin, company):
         'name': company.get('name'),
         'aliases': aliases,
         'type': 'Company',
-        'publisher': source.get('publisher'),
+        'publisher': publisher,
         'registration_number': company.get('company_number'),
         'country': company.get('jurisdiction_code')[:2],
         'legal_form': company.get('company_type'),
@@ -98,7 +100,8 @@ def emit_company(origin, company):
     })
 
     for officer in company.get('officers', []):
-        emit_officer(origin, officer, company_url=company_url)
+        emit_officer(origin, officer, company_url=company_url, 
+                     publisher=publisher)
 
     return company_uid
 

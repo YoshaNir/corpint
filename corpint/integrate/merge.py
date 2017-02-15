@@ -42,7 +42,7 @@ def merge_entity(project, uid_canonical):
         'address': set()
     }
     for key, values in entity.items():
-        if key in ['uid', 'origin', 'address']:
+        if key in ['uid', 'origin', 'address', 'publisher']:
             merged[key].update(values)
             continue
         if key == 'type':
