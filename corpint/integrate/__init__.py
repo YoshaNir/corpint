@@ -3,6 +3,7 @@ from itertools import combinations
 from sqlalchemy import Unicode
 import Levenshtein
 import fingerprints
+
 from corpint.integrate.merge import merge_entities, merge_links  # noqa
 from corpint.integrate.dupe import create_deduper, train_judgement
 from corpint.integrate.dupe import pairwise_score, to_record  # noqa
@@ -10,6 +11,7 @@ from corpint.integrate.dupe import pairwise_score, to_record  # noqa
 from corpint.integrate.util import normalize_name, get_clusters
 from corpint.integrate.util import get_decided, merkle, sorttuple
 from corpint.util import ensure_column
+from corpint.schema import ASSET
 
 
 def name_merge(project, origins):
@@ -49,6 +51,8 @@ def generate_candidates_simple(project, threshold=.5):
     project.mappings.delete(judgement=None)
     for ((left_uid, left), (right_uid, right)) in combinations(data.items(), 2):
         if sorttuple(left_uid, right_uid) in decided:
+            continue
+        if ASSET in (right.get('type'), left.get('type')):
             continue
         left_name = fingerprints.generate(left.get('name'))
         right_name = fingerprints.generate(right.get('name'))

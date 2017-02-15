@@ -6,7 +6,7 @@ from pprint import pprint  # noqa
 from urlparse import urljoin
 from itertools import count
 
-from corpint.schema import TYPES
+from corpint.schema import COMPANY, ORGANIZATION, PERSON, ASSET, OTHER
 
 log = logging.getLogger(__name__)
 API_KEY = environ.get('ALEPH_APIKEY')
@@ -34,6 +34,16 @@ LINK_PROPERTIES = {
     'summary': 'summary',
     'startDate': 'start_date',
     'endDate': 'end_date',
+}
+
+TYPE_MAPPING = {
+    'Company': COMPANY,
+    'Land': ASSET,
+    'Person': PERSON,
+    'LegalEntity': OTHER,
+    'Organization': ORGANIZATION,
+    'Concession': ASSET,
+    'PublicBody': ORGANIZATION
 }
 
 
@@ -91,8 +101,7 @@ def emit_entity(origin, entity, links=True):
         'uid': entity_uid,
         'name': entity.get('name')
     }
-    if entity.get('schema') in TYPES:
-        data['type'] = entity.get('Schema')
+    data['type'] = TYPE_MAPPING.get(entity.get('schema'))
 
     data.update(map_properties(entity, ENTITY_PROPERTIES))
     origin.log.info("[%(dataset)s]: %(name)s", entity)
