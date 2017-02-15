@@ -35,6 +35,7 @@ setup(
         'rdflib',  # wikidata
         'SPARQLWrapper',  # wikidata
         'zeep',  # bvd orbis (soap)
+        'urlnorm',  # document crawler
         'py2neo',
         'click',
         'Flask'
@@ -49,6 +50,7 @@ setup(
             'wikidata = corpint.enrich.wikidata:enrich',
             'opencorporates = corpint.enrich.opencorporates:enrich',
             'aleph = corpint.enrich.aleph:enrich',
+            'alephdocuments = corpint.enrich.aleph:enrich_documents',
             'bvdorbis = corpint.enrich.bvdorbis:enrich',
         ]
     },

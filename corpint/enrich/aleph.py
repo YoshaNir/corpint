@@ -2,6 +2,7 @@ import logging
 import requests
 from time import sleep
 from os import environ
+from normality import latinize_text
 from pprint import pprint  # noqa
 from urlparse import urljoin
 from itertools import count
@@ -9,9 +10,11 @@ from itertools import count
 from corpint.schema import COMPANY, ORGANIZATION, PERSON, ASSET, OTHER
 
 log = logging.getLogger(__name__)
+
 API_KEY = environ.get('ALEPH_APIKEY')
 HOST = environ.get('ALEPH_HOST', 'https://data.occrp.org')
 ENTITIES_API = urljoin(HOST, 'api/1/entities')
+DOCUMENTS_API = urljoin(HOST, 'api/1/query')
 
 ENTITY_PROPERTIES = {
     'summary': 'summary',
@@ -126,3 +129,51 @@ def emit_entity(origin, entity, links=True):
 def enrich(origin, entity):
     for entity in aleph_paged(ENTITIES_API, params={'q': entity['name']}):
         emit_entity(origin, entity)
+
+
+
+STOPWORDS = ['mr ', 'mr. ', 'ms ', 'ms. ',
+             'mrs ', 'mrs. ', 'the ', 'a ']
+
+def search_term(term):
+    if term is None:
+        return
+    term = latinize_text(term)
+    if term is None:
+        return
+    term = term.replace('"', ' ').strip().lower()
+    for stopword in STOPWORDS:
+        if term.startswith(stopword):
+            term = term[len(stopword):]
+    if not len(term):
+        return
+    return '"%s"' % term
+
+
+def search_documents(query):
+    for doc in aleph_paged(DOCUMENTS_API, params={'q': query}):
+        url = urljoin(HOST, '/text/%s' % doc['id'])
+        if doc.get('type') == 'tabular':
+            url = urljoin(HOST, '/tabular/%s/0' % doc['id'])
+        yield url, doc.get('title')
+
+
+def enrich_documents(origin, entity):
+    names = [search_term(n) for n in entity.get('names')]
+    if entity['type'] == PERSON:
+        names = [n + '~2' for n in names]
+    names = ' OR '.join(set([n for n in names if n is not None]))
+    total = 0
+    for url, title in search_documents(search_term(names)):
+        for uid in entity['uid_parts']:
+            origin.emit_document(url, title, uid=uid, query=names)
+        total += 1
+    origin.log.info('Query [%s]: %s', total, names)
+
+    for address in entity['address']:
+        total = 0
+        term = search_term(address) + '~3'
+        for url, title in search_documents(term):
+            origin.emit_document(url, title, query=address)
+            total += 1
+        origin.log.info('Query [%s]: %s', total, address)

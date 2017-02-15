@@ -61,6 +61,13 @@ def load_entity(project, graph, entity):
             rel = Relationship(node, 'LOCATION', loc)
             tx.create(rel)
 
+        for doc in project.documents.find(uid=entity['uid']):
+            title = doc.get('title') or doc.get('url')
+            doc = Node('Document', name=title, url=doc.get('url'))
+            tx.merge(doc, 'Document', 'url')
+            rel = Relationship(node, 'MENTIONS', doc)
+            tx.create(rel)
+
         tx.commit()
         return entity['uid'], node
     except Exception as err:
@@ -92,3 +99,4 @@ def load_to_neo4j(project, neo4j_uri=None):
 
     clear_leaf_nodes(graph, 'Name')
     clear_leaf_nodes(graph, 'Address')
+    clear_leaf_nodes(graph, 'Document')

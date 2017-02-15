@@ -70,6 +70,7 @@ def canonicalise(project):
         (project.aliases, 'uid', 'uid_canonical'),
         (project.links, 'source', 'source_canonical'),
         (project.links, 'target', 'target_canonical'),
+        (project.documents, 'uid', 'uid_canonical'),
     )
 
     for (table, src, dest) in updates:

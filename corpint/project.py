@@ -1,5 +1,6 @@
 import logging
 import dataset
+import urlnorm
 import countrynames
 from pprint import pprint  # noqa
 from sqlalchemy import Boolean, Unicode, Float
@@ -7,6 +8,7 @@ from sqlalchemy import Boolean, Unicode, Float
 from corpint.origin import Origin
 from corpint.schema import TYPES
 from corpint.integrate import canonicalise, merge_entities, merge_links
+from corpint.load.util import get_uid
 from corpint.enrich import get_enrichers
 from corpint.util import ensure_column
 
@@ -23,13 +25,13 @@ class Project(object):
         self.aliases = self.db['%s_aliases' % self.prefix]
         self.links = self.db['%s_links' % self.prefix]
         self.mappings = self.db['%s_mappings' % self.prefix]
+        self.documents = self.db['%s_documents' % self.prefix]
 
         ensure_column(self.mappings, 'judgement', Boolean)
         ensure_column(self.mappings, 'score', Float)
         ensure_column(self.mappings, 'judgement_attribution', Unicode)
-        for field in ['uid']:
-            ensure_column(self.mappings, 'left_' + field, Unicode)
-            ensure_column(self.mappings, 'right_' + field, Unicode)
+        ensure_column(self.mappings, 'left_uid', Unicode)
+        ensure_column(self.mappings, 'right_uid', Unicode)
 
     def origin(self, name):
         return Origin(self, name)
@@ -88,6 +90,19 @@ class Project(object):
         if data['source'] == data['target']:
             return
         self.links.upsert(data, ['origin', 'source', 'target'])
+
+    def emit_document(self, origin, url, title=None, uid=None,
+                      query=None):
+        url = urlnorm.norm(url)
+        doc_id = get_uid(origin, url, uid or query)
+        self.documents.upsert({
+            'document_uid': doc_id,
+            'origin': origin,
+            'uid': uid,
+            'query': query,
+            'source_url': url,
+            'title': title,
+        }, ['document_uid'])
 
     def emit_judgement(self, uida, uidb, judgement,
                        trained=False, score=None):
