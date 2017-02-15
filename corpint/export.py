@@ -68,7 +68,7 @@ def load_to_neo4j(project, neo4j_uri=None):
                 addrfps.add(fp)
                 loc = Node('Address', name=address, fp=fp)
                 tx.merge(loc, 'Address', 'fp')
-                rel = Relationship(node, 'LOCATION', alias)
+                rel = Relationship(node, 'LOCATION', loc)
                 tx.create(rel)
 
         for link in project.iter_merged_links():

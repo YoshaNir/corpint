@@ -136,6 +136,8 @@ def search_officers(origin, entity):
             'page': page
         }
         results = get_oc_api(OFFICER_SEARCH_API, params=params)
+        if results is None:
+            break
         for officer in results.get('officers'):
             emit_officer(origin, officer)
         if page >= results.get('total_pages'):
@@ -152,6 +154,8 @@ def search_companies(origin, entity):
         if entity.get('jurisdiction'):
             params['country_code'] = entity.get('country')
         results = get_oc_api(COMPANY_SEARCH_API, params=params)
+        if results is None:
+            break
         for company in results.get('companies'):
             company = company.get('company')
             get_company(origin, company.get('opencorporates_url'))

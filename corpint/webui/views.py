@@ -26,7 +26,7 @@ def common_fields(left, right):
 
 @blueprint.route('/', methods=['GET'])
 def index():
-    return redirect(url_for('.undecided_get'))
+    return redirect(url_for('.scored_get'))
 
 
 @blueprint.route('/undecided', methods=['GET'])
