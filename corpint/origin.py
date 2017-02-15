@@ -31,9 +31,11 @@ class Origin(object):
     def emit_judgement(self, uida, uidb, judgement):
         self.project.emit_judgement(uida, uidb, judgement)
 
-    def emit_document(self, url, title=None, uid=None, query=None):
+    def emit_document(self, url, title=None, uid=None, query=None,
+                      publisher=None):
         self.project.emit_document(self.name, url, title=title,
-                                   uid=uid, query=query)
+                                   uid=uid, query=query,
+                                   publisher=publisher)
 
     def clear(self):
         self.project.entities.delete(origin=self.name)

@@ -30,7 +30,7 @@ def get_oc_api(url, params=None):
             sleep(i ** 2)
 
 
-def emit_officer(origin, officer, company_url=None):
+def emit_officer(origin, officer, company_url=None, publisher=None):
     if isinstance(officer.get('officer'), dict):
         officer = officer.get('officer')
 
@@ -49,6 +49,7 @@ def emit_officer(origin, officer, company_url=None):
         'country': officer.get('nationality'),
         'summary': officer.get('occupation'),
         'opencorporates_url': officer['opencorporates_url'],
+        'publisher': publisher
     })
 
     if company_url is not None:
@@ -70,6 +71,7 @@ def emit_company(origin, company):
 
     company_url = company['opencorporates_url']
     company_uid = origin.uid(company_url)
+    source = company.get('source', {})
 
     aliases = set()
     for key in ['alternative_names', 'previous_names']:
@@ -84,6 +86,7 @@ def emit_company(origin, company):
         'name': company.get('name'),
         'aliases': aliases,
         'type': 'Company',
+        'publisher': source.get('publisher'),
         'registration_number': company.get('company_number'),
         'country': company.get('jurisdiction_code')[:2],
         'legal_form': company.get('company_type'),

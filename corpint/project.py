@@ -92,7 +92,7 @@ class Project(object):
         self.links.upsert(data, ['origin', 'source', 'target'])
 
     def emit_document(self, origin, url, title=None, uid=None,
-                      query=None):
+                      query=None, publisher=None):
         url = urlnorm.norm(url)
         doc_id = get_uid(origin, url, uid or query)
         self.documents.upsert({
@@ -101,6 +101,7 @@ class Project(object):
             'uid': uid,
             'query': query,
             'source_url': url,
+            'publisher': publisher,
             'title': title,
         }, ['document_uid'])
 

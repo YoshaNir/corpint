@@ -15,6 +15,10 @@ API_KEY = environ.get('ALEPH_APIKEY')
 HOST = environ.get('ALEPH_HOST', 'https://data.occrp.org')
 ENTITIES_API = urljoin(HOST, 'api/1/entities')
 DOCUMENTS_API = urljoin(HOST, 'api/1/query')
+COLLECTIONS_API = urljoin(HOST, 'api/1/collections')
+COLLECTIONS = {}
+DATASETS_API = urljoin(HOST, 'api/1/datasets')
+DATASETS = {}
 
 ENTITY_PROPERTIES = {
     'summary': 'summary',
@@ -48,6 +52,22 @@ TYPE_MAPPING = {
     'Concession': ASSET,
     'PublicBody': ORGANIZATION
 }
+
+
+def collection_label(id):
+    if id not in COLLECTIONS:
+        url = '%s/%s' % (COLLECTIONS_API, id)
+        res = aleph_api(url)
+        COLLECTIONS[id] = res.get('label')
+    return COLLECTIONS[id]
+
+
+def dataset_label(id):
+    if id not in DATASETS:
+        url = '%s/%s' % (DATASETS_API, id)
+        res = aleph_api(url)
+        DATASETS[id] = res.get('label')
+    return DATASETS[id]
 
 
 def aleph_api(url, params=None):
@@ -102,6 +122,7 @@ def emit_entity(origin, entity, links=True):
     data = {
         'aleph_id': '%s:%s' % (entity.get('dataset'), entity.get('id')),
         'uid': entity_uid,
+        'publisher': dataset_label(entity.get('dataset')),
         'name': entity.get('name')
     }
     data['type'] = TYPE_MAPPING.get(entity.get('schema'))
@@ -155,7 +176,8 @@ def search_documents(query):
         url = urljoin(HOST, '/text/%s' % doc['id'])
         if doc.get('type') == 'tabular':
             url = urljoin(HOST, '/tabular/%s/0' % doc['id'])
-        yield url, doc.get('title')
+        publisher = collection_label(doc.get('collection_id'))
+        yield url, doc.get('title'), publisher
 
 
 def enrich_documents(origin, entity):
@@ -164,16 +186,18 @@ def enrich_documents(origin, entity):
         names = [n + '~2' for n in names]
     names = ' OR '.join(set([n for n in names if n is not None]))
     total = 0
-    for url, title in search_documents(search_term(names)):
+    for url, title, publisher in search_documents(search_term(names)):
         for uid in entity['uid_parts']:
-            origin.emit_document(url, title, uid=uid, query=names)
+            origin.emit_document(url, title, uid=uid, query=names,
+                                 publisher=publisher)
         total += 1
     origin.log.info('Query [%s]: %s', total, names)
 
     for address in entity['address']:
         total = 0
         term = search_term(address) + '~3'
-        for url, title in search_documents(term):
-            origin.emit_document(url, title, query=address)
+        for url, title, publisher in search_documents(term):
+            origin.emit_document(url, title, query=address,
+                                 publisher=publisher)
             total += 1
         origin.log.info('Query [%s]: %s', total, address)

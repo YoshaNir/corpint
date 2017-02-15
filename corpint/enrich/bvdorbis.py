@@ -16,6 +16,8 @@ FIELD_MAPPING = {
     'SLEGALF': 'legal_form',
     'LEGALFRM': 'legal_form',
     'RELEASE_DATE': 'last_updated',
+    'SOURCE_IP_NAME': 'publisher',
+    # 'DATASET': 'publisher',
     # 'STATEINC': 'jurisdiction',
     'DATEINC': 'incorporation_date',
     'NAME': 'name',
