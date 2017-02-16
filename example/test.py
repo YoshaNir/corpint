@@ -35,7 +35,7 @@ log.info("Data integration...")
 # project.enrich('bvdorbis')
 
 log.info("Geocoding addresses...")
-project.enrich('geocode')
+project.enrich('gmaps')
 
 from corpint.export import load_to_neo4j
 load_to_neo4j(project, 'http://neo4j:test@localhost:7474')

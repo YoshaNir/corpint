@@ -1,4 +1,3 @@
-
 from os import environ
 import googlemaps
 from normality import latinize_text
@@ -28,10 +27,32 @@ def tidy_address(address):
     if address is None or len(address) < 3 or address == 'NONE':
         return
     address = address.replace('UNDELIVERABLE DOMESTIC ADDRESS', '')
-    address = address.replace('<br/>', ', ')
+    address = address.replace('<BR/>', ', ')
     address = address.replace('\n', ', ')
     address = address.strip()
     return address
+
+
+def remove_first_section_of_address(address):
+    '''
+    Often when an address fails to geocode, it's because it starts
+    with a name. We could remove this with NLTK, but a lighter-weight
+    way to do this is just to remove the element before the first comma.
+    This will also give a rough location for street addresses that
+    Google Maps doesn't know about.
+    '''
+    a = address.split(', ')
+    if len(a) > 1:
+        address = ', '.join(a[1:])
+    return address
+
+
+def geocode(address):
+    results = gmaps.geocode(address)
+    if not len(results):
+        d = remove_first_section_of_address(address)
+        results = gmaps.geocode(d)
+    return results
 
 
 def enrich(origin, entity):
@@ -44,7 +65,7 @@ def enrich(origin, entity):
         address = tidy_address(address)
         if address is None:
             return
-        results = gmaps.geocode(address)
+        results = geocode(address)
         if not len(results):
             origin.log.info("Geocoder found no results: %s" % address)
             continue
@@ -56,4 +77,3 @@ def enrich(origin, entity):
             # origin.log.info("Geocoder found results: %s" % address)
             origin.project.emit_entity(entity)
             break
-        
