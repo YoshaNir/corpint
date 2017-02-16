@@ -49,6 +49,7 @@ setup(
             'aleph = corpint.enrich.aleph:enrich',
             'alephdocuments = corpint.enrich.aleph:enrich_documents',
             'bvdorbis = corpint.enrich.bvdorbis:enrich',
+            'geocode = corpint.enrich.geocode:enrich'
         ]
     },
     tests_require=['coverage', 'nose']

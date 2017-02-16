@@ -18,14 +18,14 @@ origin.emit_entity({
     'jurisdiction': 'United Kingdom'
 })
 
-# log.info("Reading CSV file...")
-# with open(path.join(path.dirname(__file__), 'test.csv')) as fh:
-#     origin = project.origin(fh.name)
-#     origin.clear()
-#     for entity in corpint.load.csv(fh):
-#         entity['uid'] = origin.uid(entity['name'])
-#         entity['weight'] = 1
-#         origin.emit_entity(entity)
+log.info("Reading CSV file...")
+with open(path.join(path.dirname(__file__), 'test.csv')) as fh:
+    origin = project.origin(fh.name)
+    origin.clear()
+    for entity in corpint.load.csv(fh):
+        entity['uid'] = origin.uid(entity['name'])
+        entity['weight'] = 1
+        origin.emit_entity(entity)
 
 log.info("Data integration...")
 # project.integrate(auto_match=True)
@@ -33,6 +33,9 @@ log.info("Data integration...")
 # project.integrate(auto_match=True)
 # project.enrich('wikidata')
 # project.enrich('bvdorbis')
+
+log.info("Geocoding addresses...")
+project.enrich('geocode')
 
 from corpint.export import load_to_neo4j
 load_to_neo4j(project, 'http://neo4j:test@localhost:7474')

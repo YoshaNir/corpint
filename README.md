@@ -26,6 +26,7 @@ There's a very alpha Flask merging UI to allow you to merge or reject entity map
 * Easily import data from databases or spreadsheets
 * Merge entities from multiple sources
 * Enrich data from OpenCorporates, Orbis, Wikipedia, Wikidata, Aleph
+* Geocode and normalise addresses using the Google Maps API
 * Mark duplicates
 * Generate a unified view of the resulting watchlist
 

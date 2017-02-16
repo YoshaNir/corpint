@@ -1,4 +1,6 @@
-type,name,country,dob
-Person,Damian Calderbank,GB,
-Company,Open Knowledge Foundation,GB,
-Person,William Gates III,US,
+type,name,country,dob,address
+Person,Damian Calderbank,GB,,
+Company,Open Knowledge Foundation,GB,,
+Person,William Gates III,US,,
+Company,"Acme Inc",US,,"10 Brook St, Mayfair, London W1S 1BG"
+Company,"Lawyers LLC",US,,"C/O Damian Calderbank, 10 Brook St, Mayfair, London W1S 1BG"
