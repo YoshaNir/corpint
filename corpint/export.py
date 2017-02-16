@@ -63,9 +63,12 @@ def load_entity(project, graph, entity):
 
         for doc in project.documents.find(uid=entity['uid']):
             title = doc.get('title') or doc.get('url')
-            doc = Node('Document', name=title, url=doc.get('url'),
-                       publisher=doc.get('publisher'))
-            tx.merge(doc, 'Document', 'url')
+            project.log.info(" -> Node [Document]: %s", title)
+            doc = Node('Document', name=title,
+                       link=doc.get('url'),
+                       publisher=doc.get('publisher'),
+                       hash=doc.get('hash'))
+            tx.merge(doc, 'Document', 'hash')
             rel = Relationship(node, 'MENTIONS', doc)
             tx.create(rel)
 
@@ -93,7 +96,7 @@ def load_to_neo4j(project, neo4j_uri=None):
     for link in project.iter_merged_links():
         source = entities.get(link.pop('source'))
         target = entities.get(link.pop('target'))
-        if source is None or target is None:
+        if source is None or target is None or source == target:
             continue
         rel = Relationship(source, 'LINK', target, **normalise(link))
         graph.create(rel)

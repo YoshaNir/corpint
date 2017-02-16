@@ -79,3 +79,15 @@ def canonicalise(project):
             query = "UPDATE %s SET %s = '%s' WHERE %s IN (%s)"
             query = query % (table.table.name, dest, canon, src, uids)
             project.db.query(query)
+
+
+def add_mapping_names(project):
+    project.log.info("Setting names on mapping...")
+    ensure_column(project.mappings, 'left_name', Unicode)
+    ensure_column(project.mappings, 'right_name', Unicode)
+    table = project.mappings.table
+    for entity in project.entities:
+        uid = entity.get('uid')
+        name = entity.get('name').replace("'", '"')
+        project.db.query("UPDATE %s SET left_name = '%s' WHERE left_uid = '%s';" % (table.name, name, uid))  # noqa
+        project.db.query("UPDATE %s SET right_name = '%s' WHERE right_uid = '%s';" % (table.name, name, uid))  # noqa

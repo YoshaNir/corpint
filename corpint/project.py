@@ -7,7 +7,8 @@ from sqlalchemy import Boolean, Unicode, Float
 
 from corpint.origin import Origin
 from corpint.schema import TYPES
-from corpint.integrate import canonicalise, merge_entities, merge_links
+from corpint.integrate import canonicalise, add_mapping_names
+from corpint.integrate import merge_entities, merge_links
 from corpint.load.util import get_uid
 from corpint.enrich import get_enrichers
 from corpint.util import ensure_column
@@ -92,18 +93,21 @@ class Project(object):
         self.links.upsert(data, ['origin', 'source', 'target'])
 
     def emit_document(self, origin, url, title=None, uid=None,
-                      query=None, publisher=None):
+                      query=None, publisher=None, hash=None):
         url = urlnorm.norm(url)
-        doc_id = get_uid(origin, url, uid or query)
+        doc_id = get_uid(origin, hash or url)
+        ref = get_uid(origin, hash or url, uid or query)
         self.documents.upsert({
             'document_uid': doc_id,
+            'reference': ref,
             'origin': origin,
             'uid': uid,
+            'hash': hash,
             'query': query,
-            'source_url': url,
+            'url': url,
             'publisher': publisher,
             'title': title,
-        }, ['document_uid'])
+        }, ['reference'])
 
     def emit_judgement(self, uida, uidb, judgement,
                        trained=False, score=None):
@@ -121,6 +125,7 @@ class Project(object):
 
     def integrate(self):
         canonicalise(self)
+        add_mapping_names(self)
 
     def iter_merged_entities(self):
         for entity in merge_entities(self):

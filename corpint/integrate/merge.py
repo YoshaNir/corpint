@@ -65,7 +65,8 @@ def merge_entity(project, uid_canonical):
     merged['type'] = merged.get('type')
     merged['aliases'] = aliases
     merged['names'] = set(aliases)
-    merged['names'].add(merged['name'])
+    if 'name' in merged:
+        merged['names'].add(merged['name'])
     return merged
 
 
