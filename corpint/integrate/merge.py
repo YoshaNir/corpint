@@ -39,17 +39,21 @@ def merge_entity(project, uid_canonical):
     merged = {
         'uid': set(),
         'origin': set(),
-        'address': set()
+        'address': set(),
+        'weight': 0,
+        'type': None,
     }
-    multis = ['uid', 'origin', 'address', 'normalized_address' 'publisher']
+    multis = ['uid', 'origin', 'address', 'normalized_address', 'publisher']
     for key, values in entity.items():
         if key in multis:
             merged[key].update(values)
             continue
         if key == 'type':
-            value = choose_best_type(values)
+            merged[key] = choose_best_type(values)
+            continue
         elif key == 'weight':
-            value = max(values)
+            merged[key] = max(values)
+            continue
         elif key == 'name':
             value = choose_best_name(values)
             aliases.update(values)
@@ -63,8 +67,6 @@ def merge_entity(project, uid_canonical):
     # project.log.info("Merged: %(name)s", merged)
     merged['uid_parts'] = merged['uid']
     merged['uid'] = uid_canonical
-    merged['type'] = merged.get('type')
-    merged['weight'] = merged.get('weight', 0)
     merged['aliases'] = aliases
     merged['names'] = set(aliases)
     if 'name' in merged:
