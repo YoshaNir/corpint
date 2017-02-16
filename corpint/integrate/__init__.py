@@ -38,7 +38,7 @@ def generate_candidates(project, threshold=.5):
         combo = sorttuple(left_uid, right_uid)
         if combo in decided:
             continue
-        decided.add(combo)
+        # decided.add(combo)
         if ASSET in types:
             continue
         left_name = fingerprints.generate(left.get('name'))
@@ -52,7 +52,8 @@ def generate_candidates(project, threshold=.5):
         project.log.info("Candidate [%.3f]: %s <-> %s",
                          score, left['name'], right['name'])
         project.emit_judgement(left_uid, right_uid,
-                               judgement=None, score=score)
+                               judgement=None,
+                               score=score)
 
 
 def canonicalise(project):
