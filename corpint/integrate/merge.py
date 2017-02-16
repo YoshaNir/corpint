@@ -3,13 +3,16 @@ from collections import defaultdict
 import Levenshtein
 
 from corpint.integrate.util import sorttuple
-from corpint.schema import choose_best_type
+from corpint.schema import choose_best_type, OTHER
+
+MULTI_FIELDS = ['uid', 'origin', 'address', 'normalized_address', 'publisher']
 
 
 def choose_best_name(values):
     values = [v.strip() for v in values if v is not None and len(v.strip())]
     if len(values):
-        return Levenshtein.median(values)
+        return Levenshtein.setmedian(values)
+
 
 def merge_values(values):
     return '; '.join(set([unicode(v) for v in values]))
@@ -18,60 +21,57 @@ def merge_values(values):
 def merge_entity(project, uid_canonical):
     if uid_canonical is None:
         return
-    entity = defaultdict(list)
-    aliases = set()
 
+    aliases = list()
     for alias in project.aliases.find(uid_canonical=uid_canonical):
         if alias.get('uid') is None:
             continue
-        aliases.add(alias['name'])
+        aliases.append(alias['name'])
+
+    entity = defaultdict(list)
 
     for part in project.entities.find(uid_canonical=uid_canonical):
         if part.get('uid') is None:
             continue
+        part.pop('id', None)
+        part.pop('uid_canonical', None)
+        aliases.append(part.pop('name', None))
+        entity['type'] = choose_best_type((entity.pop('type', OTHER),
+                                           part.pop('type', OTHER)))
+        entity['weight'] = max(entity.get('weight'), 0,
+                               int(part.pop('weight', 0)))
+        entity['lat'] = part.pop('lat') or entity.get('lat')
+        entity['lng'] = part.pop('lng') or entity.get('lng')
+
         for key, value in part.items():
-            if key in ['uid_canonical', 'id']:
+            if value is None:
                 continue
-            if value is None or not len(unicode(value).strip()):
+            value = unicode(value).strip()
+            if not len(value):
                 continue
             entity[key].append(value)
 
-    merged = {
-        'uid': set(),
-        'origin': set(),
-        'address': set(),
-        'weight': 0,
-        'type': None,
-    }
-    multis = ['uid', 'origin', 'address', 'normalized_address', 'publisher']
-    for key, values in entity.items():
-        if key in multis:
-            merged[key].update(values)
+    for key, value in entity.items():
+        if key in MULTI_FIELDS:
+            entity[key] = set(value)
             continue
-        if key == 'type':
-            merged[key] = choose_best_type(values)
-            continue
-        elif key == 'weight':
-            merged[key] = max(values)
-            continue
-        elif key == 'name':
-            value = choose_best_name(values)
-            aliases.update(values)
-            if value in aliases:
-                aliases.remove(value)
-        else:
-            value = merge_values(values)
-        if value is None:
-            continue
-        merged[key] = value
-    # project.log.info("Merged: %(name)s", merged)
-    merged['uid_parts'] = merged['uid']
-    merged['uid'] = uid_canonical
-    merged['aliases'] = aliases
-    merged['names'] = set(aliases)
-    if 'name' in merged:
-        merged['names'].add(merged['name'])
-    return merged
+
+        if isinstance(key, list):
+            value = merge_values(value)
+
+        entity[key] = value
+
+    aliases = [a.strip() for a in aliases
+               if a is not None and len(a.strip())]
+    entity['name'] = choose_best_name(aliases)
+    aliases = set(aliases)
+    entity['names'] = set(aliases)
+    if entity['name'] in aliases:
+        aliases.remove(entity['name'])
+    entity['aliases'] = aliases
+    entity['uid_parts'] = entity['uid']
+    entity['uid'] = uid_canonical
+    return dict(entity)
 
 
 def merge_entities(project):

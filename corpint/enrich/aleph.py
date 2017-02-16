@@ -173,6 +173,8 @@ def search_term(term):
 
 
 def search_documents(query):
+    if query is None or len(query) <= (5 + 2):
+        return
     for doc in aleph_paged(DOCUMENTS_API, params={'q': query}, limit=5000):
         url = urljoin(HOST, '/text/%s' % doc['id'])
         if doc.get('type') == 'tabular':
@@ -188,7 +190,7 @@ def enrich_documents(origin, entity):
     names = set()
     for name in entity.get('names'):
         term = search_term(name)
-        if term is None or len(term) <= (4 + 2):
+        if term is None:
             continue
         if entity['type'] == PERSON:
             term = term + '~2'

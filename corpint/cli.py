@@ -1,4 +1,5 @@
 import click
+from pprint import pprint  # noqa
 
 from corpint import project as make_project
 from corpint import env
@@ -50,6 +51,13 @@ def enrich(ctx, origins, minweight, enricher):
 @click.option('origins', '--origin', '-o', multiple=True)
 def namemerge(ctx, origins):
     name_merge(ctx.obj['PROJECT'], origins)
+
+
+@cli.command()
+@click.pass_context
+def searches(ctx):
+    for entity in ctx.obj['PROJECT'].iter_searches():
+        pprint(entity)
 
 
 def main():
