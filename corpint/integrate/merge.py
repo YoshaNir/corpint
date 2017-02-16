@@ -64,6 +64,7 @@ def merge_entity(project, uid_canonical):
     merged['uid_parts'] = merged['uid']
     merged['uid'] = uid_canonical
     merged['type'] = merged.get('type')
+    merged['weight'] = merged.get('weight', 0)
     merged['aliases'] = aliases
     merged['names'] = set(aliases)
     if 'name' in merged:
