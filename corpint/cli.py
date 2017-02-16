@@ -31,11 +31,8 @@ def integrate(ctx):
 @cli.command()
 @click.pass_context
 @click.option('threshold', '--threshold', '-t', type=float, default=0.5)
-@click.option('simple', '--simple', default=False, is_flag=True)
-def candidates(ctx, threshold, simple):
+def candidates(ctx, threshold):
     from corpint.integrate import generate_candidates
-    if simple:
-        from corpint.integrate import generate_candidates_simple as generate_candidates
     generate_candidates(ctx.obj['PROJECT'], threshold=threshold)
 
 

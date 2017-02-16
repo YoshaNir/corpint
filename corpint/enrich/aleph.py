@@ -181,6 +181,9 @@ def search_documents(query):
 
 
 def enrich_documents(origin, entity):
+    for uid in entity['uid_parts']:
+        origin.project.documents.delete(uid=uid)
+
     names = [search_term(n) for n in entity.get('names')]
     if entity['type'] == PERSON:
         names = [n + '~2' for n in names]
