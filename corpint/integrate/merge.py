@@ -29,6 +29,8 @@ def merge_entity(project, uid_canonical):
         aliases.append(alias['name'])
 
     entity = defaultdict(list)
+    for key in MULTI_FIELDS:
+        entity[key] = []
 
     for part in project.entities.find(uid_canonical=uid_canonical):
         if part.get('uid') is None:
