@@ -38,6 +38,7 @@ class Project(object):
         return Origin(self, name)
 
     def emit_entity(self, data):
+        data.pop('id', None)
         uid = data.get('uid')
         if uid is None:
             raise ValueError("No UID for entity: %r", data)

@@ -22,11 +22,12 @@ setup(
     install_requires=[
         'normality',
         'dataset>=0.8',
-        'requests',
+        'requests<=2.11.1',
         'countrynames',
         'fingerprints',
         'unicodecsv',
         'lxml',
+        'googlemaps',
         'python-Levenshtein',
         'mwclient',  # wikipedia
         'rdflib',  # wikidata
@@ -49,7 +50,7 @@ setup(
             'aleph = corpint.enrich.aleph:enrich',
             'alephdocuments = corpint.enrich.aleph:enrich_documents',
             'bvdorbis = corpint.enrich.bvdorbis:enrich',
-            'geocode = corpint.enrich.geocode:enrich'
+            'gmaps = corpint.enrich.gmaps:enrich'
         ]
     },
     tests_require=['coverage', 'nose']

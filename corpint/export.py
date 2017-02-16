@@ -48,7 +48,7 @@ def load_entity(project, graph, entity):
             tx.create(rel)
 
         addrfps = set()
-        for address in entity.get('address'):
+        for address in entity.get('address_canonical'):
             fp = fingerprints.generate(address)
             if fp is None:
                 continue

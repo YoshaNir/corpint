@@ -41,8 +41,9 @@ def merge_entity(project, uid_canonical):
         'origin': set(),
         'address': set()
     }
+    multis = ['uid', 'origin', 'address', 'normalized_address' 'publisher']
     for key, values in entity.items():
-        if key in ['uid', 'origin', 'address', 'publisher']:
+        if key in multis:
             merged[key].update(values)
             continue
         if key == 'type':
