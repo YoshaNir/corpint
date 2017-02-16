@@ -80,7 +80,7 @@ def emit_company(origin, company):
         for value in company.get(key, []):
             value = value.get('company_name')
             if value is not None:
-                aliases.update(value)
+                aliases.add(value)
 
     origin.log.info("OC Company [%(company_number)s]: %(name)s", company)
     origin.emit_entity({
