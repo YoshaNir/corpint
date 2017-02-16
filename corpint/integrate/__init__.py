@@ -8,7 +8,7 @@ from corpint.integrate.merge import merge_entities, merge_links  # noqa
 from corpint.integrate.util import normalize_name, get_clusters
 from corpint.integrate.util import get_decided, merkle, sorttuple
 from corpint.util import ensure_column
-from corpint.schema import ASSET
+from corpint.schema import ASSET, PERSON
 
 
 def name_merge(project, origins):
@@ -34,16 +34,19 @@ def generate_candidates(project, threshold=.5):
     project.mappings.delete(judgement=None)
     for (left, right) in combinations(data, 2):
         left_uid, right_uid = left['uid'], right['uid']
+        types = right.get('type'), left.get('type')
         combo = sorttuple(left_uid, right_uid)
         if combo in decided:
             continue
         decided.add(combo)
-        if ASSET in (right.get('type'), left.get('type')):
+        if ASSET in types:
             continue
         left_name = fingerprints.generate(left.get('name'))
         right_name = fingerprints.generate(right.get('name'))
         distance = Levenshtein.distance(left_name, right_name)
         score = 1 - (distance / float(max(len(left_name), len(right_name))))
+        if PERSON not in types:
+            score *= .9
         if score <= threshold:
             continue
         project.log.info("Candidate [%.3f]: %s <-> %s",
