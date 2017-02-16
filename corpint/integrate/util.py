@@ -28,14 +28,16 @@ def get_trained(project, judgement):
 def get_clusters(project):
     """Get a list of identity clusters."""
     clusters = []
-    for (a, b) in get_trained(project, True):
-        for cluster in clusters:
-            if a in cluster or b in cluster:
-                cluster.add(a)
-                cluster.add(b)
-                break
-        else:
-            clusters.append(set([a, b]))
+    for pair in get_trained(project, True):
+        new_clusters = []
+        cluster = set(pair)
+        for cand in clusters:
+            if cluster.isdisjoint(cand):
+                new_clusters.append(cand)
+            else:
+                cluster = cluster.union(cand)
+        new_clusters.append(cluster)
+        clusters = new_clusters
     return clusters
 
 
@@ -57,8 +59,8 @@ def get_decided(project):
             decided.add(sorttuple(uid, ouid))
 
     for (a, b) in get_trained(project, False):
-        for left in same_as.get(a, set([a])):
-            for right in same_as.get(b, set([b])):
+        for left in same_as.get(a, [a]):
+            for right in same_as.get(b, [b]):
                 decided.add(sorttuple(left, right))
 
     return decided

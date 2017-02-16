@@ -177,7 +177,7 @@ def search_documents(query):
         if doc.get('type') == 'tabular':
             url = urljoin(HOST, '/tabular/%s/0' % doc['id'])
         publisher = collection_label(doc.get('collection_id'))
-        yield url, doc.get('title'), publisher
+        yield url, doc.get('title'), doc.get('content_hash'), publisher
 
 
 def enrich_documents(origin, entity):
@@ -186,7 +186,7 @@ def enrich_documents(origin, entity):
         names = [n + '~2' for n in names]
     names = ' OR '.join(set([n for n in names if n is not None]))
     total = 0
-    for url, title, publisher in search_documents(search_term(names)):
+    for url, title, chash, publisher in search_documents(search_term(names)):
         for uid in entity['uid_parts']:
             origin.emit_document(url, title, uid=uid, query=names,
                                  publisher=publisher)
@@ -196,7 +196,7 @@ def enrich_documents(origin, entity):
     for address in entity['address']:
         total = 0
         term = search_term(address) + '~3'
-        for url, title, publisher in search_documents(term):
+        for url, title, chash, publisher in search_documents(term):
             origin.emit_document(url, title, query=address,
                                  publisher=publisher)
             total += 1

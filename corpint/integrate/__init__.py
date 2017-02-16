@@ -5,9 +5,6 @@ import Levenshtein
 import fingerprints
 
 from corpint.integrate.merge import merge_entities, merge_links  # noqa
-from corpint.integrate.dupe import create_deduper, train_judgement
-from corpint.integrate.dupe import pairwise_score, to_record  # noqa
-# from corpint.integrate.dupe import canonicalise
 from corpint.integrate.util import normalize_name, get_clusters
 from corpint.integrate.util import get_decided, merkle, sorttuple
 from corpint.util import ensure_column
@@ -32,26 +29,15 @@ def name_merge(project, origins):
 
 
 def generate_candidates(project, threshold=.5):
-    deduper, data = create_deduper(project)
+    data = list(project.entities)
     decided = get_decided(project)
     project.mappings.delete(judgement=None)
-    for ((left_uid, left), (right_uid, right)) in combinations(data.items(), 2):
-        if sorttuple(left_uid, right_uid) in decided:
+    for (left, right) in combinations(data, 2):
+        left_uid, right_uid = left['uid'], right['uid']
+        combo = sorttuple(left_uid, right_uid)
+        if combo in decided:
             continue
-        score = pairwise_score(project, deduper, left, right)
-        if score <= threshold:
-            continue
-        project.log.info("Candidate [%.3f]: %s <-> %s", score, left['name'], right['name'])
-        project.emit_judgement(left_uid, right_uid, judgement=None, score=score)
-
-
-def generate_candidates_simple(project, threshold=.5):
-    data = {e['uid']: to_record(e) for e in project.entities}
-    decided = get_decided(project)
-    project.mappings.delete(judgement=None)
-    for ((left_uid, left), (right_uid, right)) in combinations(data.items(), 2):
-        if sorttuple(left_uid, right_uid) in decided:
-            continue
+        decided.add(combo)
         if ASSET in (right.get('type'), left.get('type')):
             continue
         left_name = fingerprints.generate(left.get('name'))
@@ -60,8 +46,10 @@ def generate_candidates_simple(project, threshold=.5):
         score = 1 - (distance / float(max(len(left_name), len(right_name))))
         if score <= threshold:
             continue
-        project.log.info("Candidate [%.3f]: %s <-> %s", score, left['name'], right['name'])
-        project.emit_judgement(left_uid, right_uid, judgement=None, score=score)
+        project.log.info("Candidate [%.3f]: %s <-> %s",
+                         score, left['name'], right['name'])
+        project.emit_judgement(left_uid, right_uid,
+                               judgement=None, score=score)
 
 
 def canonicalise(project):

@@ -99,5 +99,5 @@ def load_to_neo4j(project, neo4j_uri=None):
         graph.create(rel)
 
     clear_leaf_nodes(graph, 'Name')
-    clear_leaf_nodes(graph, 'Address')
+    # clear_leaf_nodes(graph, 'Address')
     # clear_leaf_nodes(graph, 'Document')
