@@ -28,19 +28,25 @@ def name_merge(project, origins):
             project.emit_judgement(left, right, True)
 
 
-def generate_candidates(project, threshold=.5):
+def generate_candidates(project, origins=[], threshold=.5):
+    origins = set(origins)
     data = list(project.entities)
     decided = get_decided(project)
     project.mappings.delete(judgement=None)
     for (left, right) in combinations(data, 2):
-        left_uid, right_uid = left['uid'], right['uid']
+        origins_ = set((right.get('origin'), left.get('origin')))
+        if len(origins) and origins.isdisjoint(origins_):
+            continue
+
         types = right.get('type'), left.get('type')
+        if ASSET in types:
+            continue
+
+        left_uid, right_uid = left['uid'], right['uid']
         combo = sorttuple(left_uid, right_uid)
         if combo in decided:
             continue
-        # decided.add(combo)
-        if ASSET in types:
-            continue
+
         left_name = fingerprints.generate(left.get('name'))
         right_name = fingerprints.generate(right.get('name'))
         distance = Levenshtein.distance(left_name, right_name)

@@ -5,6 +5,7 @@ from corpint import project as make_project
 from corpint import env
 from corpint.webui import run_webui
 from corpint.integrate import name_merge
+from corpint.integrate import generate_candidates
 
 
 @click.group()
@@ -32,9 +33,10 @@ def integrate(ctx):
 @cli.command()
 @click.pass_context
 @click.option('threshold', '--threshold', '-t', type=float, default=0.5)
-def candidates(ctx, threshold):
-    from corpint.integrate import generate_candidates
-    generate_candidates(ctx.obj['PROJECT'], threshold=threshold)
+@click.option('origins', '--origin', '-o', multiple=True)
+def candidates(ctx, threshold, origins):
+    generate_candidates(ctx.obj['PROJECT'], origins=origins,
+                        threshold=threshold)
 
 
 @cli.command()
