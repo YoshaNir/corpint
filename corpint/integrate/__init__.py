@@ -49,6 +49,8 @@ def generate_candidates(project, origins=[], threshold=.5):
 
         left_name = fingerprints.generate(left.get('name'))
         right_name = fingerprints.generate(right.get('name'))
+        if left_name is None or right_name is None:
+            continue
         distance = Levenshtein.distance(left_name, right_name)
         score = 1 - (distance / float(max(len(left_name), len(right_name))))
         if PERSON not in types:
