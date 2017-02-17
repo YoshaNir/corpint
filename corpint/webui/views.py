@@ -38,7 +38,7 @@ def scored_get(offset=None):
     offset = offset or int(request.args.get('offset') or 0)
     args = {
         'table': project.mappings.table.name,
-        'limit': int(request.args.get('limit') or 25),
+        'limit': int(request.args.get('limit') or 10),
         'offset': offset,
     }
     query = """

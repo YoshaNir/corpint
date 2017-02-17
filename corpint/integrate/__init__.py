@@ -46,7 +46,7 @@ def generate_candidates(project, threshold=.5):
         distance = Levenshtein.distance(left_name, right_name)
         score = 1 - (distance / float(max(len(left_name), len(right_name))))
         if PERSON not in types:
-            score *= .9
+            score *= .85
         if score <= threshold:
             continue
         project.log.info("Candidate [%.3f]: %s <-> %s",
