@@ -5,7 +5,7 @@ import Levenshtein
 from corpint.integrate.util import sorttuple
 from corpint.schema import choose_best_type, OTHER
 
-MULTI_FIELDS = ['uid', 'origin', 'address', 'normalized_address', 'publisher']
+MULTI_FIELDS = ['uid', 'origin', 'address', 'address_canonical', 'publisher']
 
 
 def choose_best_name(values):

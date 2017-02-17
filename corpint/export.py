@@ -75,6 +75,7 @@ def load_entity(project, graph, entity):
         tx.commit()
         return entity['uid'], node
     except Exception as err:
+        project.log.exception(err)
         tx.rollback()
         return None, None
 

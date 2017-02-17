@@ -7,7 +7,7 @@ from sqlalchemy import Boolean, Unicode, Float
 
 from corpint.origin import Origin
 from corpint.schema import TYPES
-from corpint.integrate import canonicalise, add_mapping_names
+from corpint.integrate import canonicalise
 from corpint.integrate import merge_entities, merge_links
 from corpint.load.util import get_uid
 from corpint.enrich import get_enrichers
@@ -126,7 +126,6 @@ class Project(object):
 
     def integrate(self):
         canonicalise(self)
-        add_mapping_names(self)
 
     def iter_merged_entities(self):
         for entity in merge_entities(self):
