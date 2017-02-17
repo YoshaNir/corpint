@@ -19,6 +19,7 @@ COLLECTIONS_API = urljoin(HOST, 'api/1/collections')
 COLLECTIONS = {}
 DATASETS_API = urljoin(HOST, 'api/1/datasets')
 DATASETS = {}
+STOPWORDS = ['mr ', 'mr. ', 'ms ', 'ms. ', 'mrs ', 'mrs. ', 'the ', 'a ']
 
 ENTITY_PROPERTIES = {
     'summary': 'summary',
@@ -153,10 +154,6 @@ def enrich(origin, entity):
         emit_entity(origin, entity)
 
 
-
-STOPWORDS = ['mr ', 'mr. ', 'ms ', 'ms. ',
-             'mrs ', 'mrs. ', 'the ', 'a ']
-
 def search_term(term):
     if term is None:
         return
@@ -167,13 +164,13 @@ def search_term(term):
     for stopword in STOPWORDS:
         if term.startswith(stopword):
             term = term[len(stopword):]
-    if not len(term):
+    if len(term) < 4:
         return
     return '"%s"' % term
 
 
 def search_documents(query):
-    if query is None or len(query) <= (5 + 2):
+    if query is None or not len(query.strip()):
         return
     for doc in aleph_paged(DOCUMENTS_API, params={'q': query}, limit=5000):
         url = urljoin(HOST, '/text/%s' % doc['id'])
@@ -187,23 +184,24 @@ def enrich_documents(origin, entity):
     for uid in entity['uid_parts']:
         origin.project.documents.delete(uid=uid)
 
-    names = set()
-    for name in entity.get('names'):
-        term = search_term(name)
-        if term is None:
-            continue
-        if entity['type'] == PERSON:
-            term = term + '~2'
-        names.add(term)
+    if entity['type'] != ASSET:
+        names = set()
+        for name in entity.get('names'):
+            term = search_term(name)
+            if term is None:
+                continue
+            if entity['type'] == PERSON:
+                term = term + '~2'
+            names.add(term)
 
-    names = ' OR '.join(names)
-    total = 0
-    for url, title, hash, publisher in search_documents(names):
-        for uid in entity['uid_parts']:
-            origin.emit_document(url, title, uid=uid, query=names,
-                                 publisher=publisher, hash=hash)
-        total += 1
-    origin.log.info('Query [%s]: %s', total, names)
+        names = ' OR '.join(names)
+        total = 0
+        for url, title, hash, publisher in search_documents(names):
+            for uid in entity['uid_parts']:
+                origin.emit_document(url, title, uid=uid, query=names,
+                                     publisher=publisher, hash=hash)
+            total += 1
+        origin.log.info('Query [%s]: %s', total, names)
 
     for address in entity['address']:
         total = 0

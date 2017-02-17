@@ -100,7 +100,7 @@ def emit_company(origin, company):
     })
 
     for officer in company.get('officers', []):
-        emit_officer(origin, officer, company_url=company_url, 
+        emit_officer(origin, officer, company_url=company_url,
                      publisher=publisher)
 
     return company_uid

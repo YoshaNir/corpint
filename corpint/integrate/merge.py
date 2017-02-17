@@ -73,6 +73,8 @@ def merge_entity(project, uid_canonical):
     entity['aliases'] = aliases
     entity['uid_parts'] = entity['uid']
     entity['uid'] = uid_canonical
+    if 'weight' not in entity or not len(entity['uid_parts']):
+        return None
     return dict(entity)
 
 
