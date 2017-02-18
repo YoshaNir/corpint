@@ -68,9 +68,8 @@ def load_entity(project, graph, entity):
             project.log.info(" -> Node [Document]: %s", title)
             doc = Node('Document', name=title,
                        link=doc.get('url'),
-                       publisher=doc.get('publisher'),
-                       hash=doc.get('hash'))
-            tx.merge(doc, 'Document', 'hash')
+                       publisher=doc.get('publisher'))
+            tx.merge(doc, 'Document', 'link')
             rel = Relationship(node, 'MENTIONS', doc)
             tx.create(rel)
 

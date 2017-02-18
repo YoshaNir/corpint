@@ -177,7 +177,7 @@ def search_documents(query):
         if doc.get('type') == 'tabular':
             url = urljoin(HOST, '/tabular/%s/0' % doc['id'])
         publisher = collection_label(doc.get('collection_id'))
-        yield url, doc.get('title'), doc.get('content_hash'), publisher
+        yield url, doc.get('title'), publisher
 
 
 def enrich_documents(origin, entity):
@@ -196,10 +196,10 @@ def enrich_documents(origin, entity):
 
         names = ' OR '.join(names)
         total = 0
-        for url, title, hash, publisher in search_documents(names):
+        for url, title, publisher in search_documents(names):
             for uid in entity['uid_parts']:
                 origin.emit_document(url, title, uid=uid, query=names,
-                                     publisher=publisher, hash=hash)
+                                     publisher=publisher)
             total += 1
         origin.log.info('Query [%s]: %s', total, names)
 
@@ -207,8 +207,8 @@ def enrich_documents(origin, entity):
         total = 0
         origin.project.documents.delete(query=address)
         term = search_term(address) + '~3'
-        for url, title, hash, publisher in search_documents(term):
+        for url, title, publisher in search_documents(term):
             origin.emit_document(url, title, query=address,
-                                 publisher=publisher, hash=hash)
+                                 publisher=publisher)
             total += 1
         origin.log.info('Query [%s]: %s', total, address)
