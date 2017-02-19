@@ -127,16 +127,14 @@ def emit_entity(origin, entity, links=True):
         'publisher': dataset_label(entity.get('dataset')),
         'name': entity.get('name')
     }
-    data['type'] = TYPE_MAPPING.get(entity.get('schema'))
-
     data.update(map_properties(entity, ENTITY_PROPERTIES))
+    data['type'] = TYPE_MAPPING.get(entity.get('schema'))
     origin.log.info("[%(dataset)s]: %(name)s", entity)
-    origin.emit_entity(data)
 
     if links:
         for link in aleph_paged(entity.get('api_url') + '/links'):
             remote = link.get('remote')
-            links = data['type'] == ASSET
+            links = data.get('type') == ASSET
             other_uid = emit_entity(origin, remote, links=links)
             if other_uid is None:
                 continue
@@ -148,6 +146,7 @@ def emit_entity(origin, entity, links=True):
             ldata.pop('aliases')
             origin.emit_link(ldata)
 
+    origin.emit_entity(data)
     return entity_uid
 
 
