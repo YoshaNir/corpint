@@ -206,7 +206,10 @@ def enrich_documents(origin, entity):
     for address in entity['address']:
         total = 0
         origin.project.documents.delete(query=address)
-        term = search_term(address) + '~3'
+        term = search_term(address)
+        if term is None:
+            continue
+        term = term + '~3'
         for url, title, publisher in search_documents(term):
             origin.emit_document(url, title, query=address,
                                  publisher=publisher)

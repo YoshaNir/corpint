@@ -58,6 +58,7 @@ def load_entity(project, graph, entity):
             if fp in addrfps:
                 continue
             addrfps.add(fp)
+            project.log.info(" -> Node [Address]: %s", address)
             loc = Node('Address', name=address, fp=fp)
             tx.merge(loc, 'Address', 'fp')
             rel = Relationship(node, 'LOCATION', loc)
