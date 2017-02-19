@@ -58,7 +58,10 @@ def merge_entity(project, uid_canonical):
             entity[key] = set(value)
             continue
 
-        if isinstance(key, list):
+        if value is None:
+            continue
+
+        if isinstance(value, list):
             value = merge_values(value)
 
         entity[key] = value
@@ -75,7 +78,9 @@ def merge_entity(project, uid_canonical):
     entity['uid'] = uid_canonical
     if 'weight' not in entity or not len(entity['uid_parts']):
         return None
-    return dict(entity)
+    entity = dict(entity)
+    # pprint(entity)
+    return entity
 
 
 def merge_entities(project):
