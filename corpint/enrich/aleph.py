@@ -135,7 +135,9 @@ def emit_entity(origin, entity, links=True):
 
     if links:
         for link in aleph_paged(entity.get('api_url') + '/links'):
-            other_uid = emit_entity(origin, link.get('remote'), links=False)
+            remote = link.get('remote')
+            links = data['type'] == ASSET
+            other_uid = emit_entity(origin, remote, links=links)
             if other_uid is None:
                 continue
             ldata = {
@@ -149,9 +151,19 @@ def emit_entity(origin, entity, links=True):
     return entity_uid
 
 
+# def get_entity(origin, entity_id):
+#     entity_uid = origin.uid(entity_id)
+#     if origin.entity_exists(entity_uid):
+#         return entity_uid
+#     url = ENTITIES_API + '/%s' % entity_id
+#     data = aleph_api(url)
+#     return emit_entity(origin, data)
+
+
 def enrich(origin, entity):
-    for entity in aleph_paged(ENTITIES_API, params={'q': entity['name']}):
-        emit_entity(origin, entity)
+    for name in entity.get('names'):
+        for entity in aleph_paged(ENTITIES_API, params={'q': name}):
+            emit_entity(origin, entity)
 
 
 def search_term(term):
