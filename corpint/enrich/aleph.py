@@ -59,6 +59,8 @@ def collection_label(id):
     if id not in COLLECTIONS:
         url = '%s/%s' % (COLLECTIONS_API, id)
         res = aleph_api(url)
+        if res is None:
+            return id
         COLLECTIONS[id] = res.get('label')
     return COLLECTIONS[id]
 
@@ -67,6 +69,8 @@ def dataset_label(id):
     if id not in DATASETS:
         url = '%s/%s' % (DATASETS_API, id)
         res = aleph_api(url)
+        if res is None:
+            return id
         DATASETS[id] = res.get('label')
     return DATASETS[id]
 
@@ -91,6 +95,8 @@ def aleph_paged(url, params=None, limit=None):
     params['offset'] = 0
     while True:
         data = aleph_api(url, params=params)
+        if data is None:
+            break
         # pprint(data)
         for result in data.get('results', []):
             yield result
@@ -132,7 +138,8 @@ def emit_entity(origin, entity, links=True):
     origin.log.info("[%(dataset)s]: %(name)s", entity)
 
     if links:
-        for link in aleph_paged(entity.get('api_url') + '/links'):
+        links_url = '%s/%s/links' % (ENTITIES_API, entity.get('id'))
+        for link in aleph_paged(links_url):
             remote = link.get('remote')
             links = data.get('type') == ASSET
             other_uid = emit_entity(origin, remote, links=links)

@@ -3,7 +3,6 @@ import googlemaps
 from normality import latinize_text
 
 API_KEY = environ.get('GMAPS_APIKEY')
-gmaps = googlemaps.Client(key=API_KEY)
 
 
 def tidy_address(address):
@@ -17,6 +16,7 @@ def tidy_address(address):
     if address.startswith('ATTENTION') \
         or address.startswith('ATTN') \
         or address.startswith('C/O'):
+
         a = address.split(',')
         if len(a) > 1:
             address = ', '.join(a[1:])
@@ -47,7 +47,7 @@ def remove_first_section_of_address(address):
     return address
 
 
-def geocode(address):
+def geocode(gmaps, address):
     results = gmaps.geocode(address)
     if not len(results):
         d = remove_first_section_of_address(address)
@@ -56,6 +56,7 @@ def geocode(address):
 
 
 def enrich(origin, entity):
+    gmaps = googlemaps.Client(key=API_KEY)
     for uid in entity['uid_parts']:
         entity = origin.project.entities.find_one(uid=uid)
         address = entity.get('address')
@@ -65,7 +66,7 @@ def enrich(origin, entity):
         address = tidy_address(address)
         if address is None:
             return
-        results = geocode(address)
+        results = geocode(gmaps, address)
         if not len(results):
             origin.log.info("Geocoder found no results: %s" % address)
             continue

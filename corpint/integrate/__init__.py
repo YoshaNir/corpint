@@ -5,7 +5,7 @@ from sqlalchemy import Unicode
 from corpint.integrate.merge import merge_entities, merge_links  # noqa
 from corpint.integrate.dupes import generate_candidates  # noqa
 from corpint.integrate.util import normalize_name, get_clusters
-from corpint.integrate.util import merkle
+from corpint.integrate.util import merkle, sorttuple, get_decided  # noqa
 from corpint.util import ensure_column
 
 
