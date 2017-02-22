@@ -55,6 +55,21 @@ TYPE_MAPPING = {
 }
 
 
+def search_term(term):
+    if term is None:
+        return
+    term = latinize_text(term)
+    if term is None:
+        return
+    term = term.replace('"', ' ').strip().lower()
+    for stopword in STOPWORDS:
+        if term.startswith(stopword):
+            term = term[len(stopword):]
+    if len(term) < 4:
+        return
+    return '"%s"' % term
+
+
 def collection_label(id):
     if id not in COLLECTIONS:
         url = '%s/%s' % (COLLECTIONS_API, id)
@@ -167,24 +182,21 @@ def emit_entity(origin, entity, links=True):
 
 
 def enrich(origin, entity):
+    if entity['type'] == ASSET:
+        return
+
+    names = set()
     for name in entity.get('names'):
-        for entity in aleph_paged(ENTITIES_API, params={'q': name}):
-            emit_entity(origin, entity)
+        term = search_term(name)
+        if term is None:
+            continue
+        if entity['type'] == PERSON:
+            term = term + '~2'
+        names.add(term)
 
-
-def search_term(term):
-    if term is None:
-        return
-    term = latinize_text(term)
-    if term is None:
-        return
-    term = term.replace('"', ' ').strip().lower()
-    for stopword in STOPWORDS:
-        if term.startswith(stopword):
-            term = term[len(stopword):]
-    if len(term) < 4:
-        return
-    return '"%s"' % term
+    query = ' OR '.join(names)
+    for entity in aleph_paged(ENTITIES_API, params={'q': query}):
+        emit_entity(origin, entity)
 
 
 def search_documents(query):
