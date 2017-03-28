@@ -75,10 +75,12 @@ LINK_FIELDS = ['role', 'percentage', 'percentage_total', 'start_date',
 TYPES = {
     'Individual': PERSON,
     'One or more named individuals or families': PERSON,
+    'Unnamed private shareholders, aggregated': PERSON,
     'Industrial company': COMPANY,
     'Private Equity firms': COMPANY,
     'Bank': COMPANY,
     'Financial company': COMPANY,
+    'Venture capital': COMPANY,
     'Mutual & Pension Fund/Nominee/Trust/Trustee': ORGANIZATION,
     'Public authority, State, Government': ORGANIZATION,
     'Insurance company': COMPANY,
@@ -140,15 +142,15 @@ def link_items(origin, entity, items, summary):
             if key == 'role':
                 key = 'summary'
             link[key] = value
+            continue
+        if key == 'aliases':
+            other['aliases'].add(value)
+        elif key == 'type':
+            other[key] = TYPES.get(value)
+            if other[key] is None and value is not None:
+                print 'UNKOWN TYPE', [value]
         else:
-            if key in 'aliases':
-                other['aliases'].add(value)
-            elif key == 'type':
-                other[key] = TYPES.get(value)
-                if other[key] is None and value is not None:
-                    print 'UNKOWN TYPE', [value]
-            else:
-                other[key] = value
+            other[key] = value
     other['uid'] = origin.uid(other.get('bvd_id'))
     if other['uid'] is None or other['name'] is None:
         return

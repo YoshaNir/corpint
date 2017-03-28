@@ -231,7 +231,8 @@ def enrich_documents(origin, entity):
                 origin.emit_document(url, title, uid=uid, query=names,
                                      publisher=publisher)
             total += 1
-        origin.log.info('Query [%s]: %s', total, names)
+        origin.log.info('Query [%s]: %s -> %s',
+                        total, entity.get('name'), names)
 
     for address in entity['address']:
         total = 0

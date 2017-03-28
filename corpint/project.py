@@ -3,6 +3,7 @@ import dataset
 import urlnorm
 import countrynames
 from pprint import pprint  # noqa
+from normality import stringify
 from sqlalchemy import Boolean, Unicode, Float
 
 from corpint.origin import Origin
@@ -56,14 +57,14 @@ class Project(object):
             data['country'] = countrynames.to_code(data['country'])
 
         name = data.get('name')
-        if name is not None:
-            name = unicode(name).strip()
-            if not len(name):
-                name = None
-            data['name'] = name
+        name = stringify(name)
+        data['name'] = name
 
         for k, v in data.items():
-            if v is None:
+            if k == 'aliases':
+                continue
+            data[k] = stringify(v)
+            if data[k] is None:
                 data.pop(k)
 
         # TODO: partial dates

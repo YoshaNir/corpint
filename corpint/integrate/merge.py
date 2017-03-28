@@ -42,8 +42,8 @@ def merge_entity(project, uid_canonical):
                                            part.pop('type', OTHER)))
         entity['weight'] = max(entity.get('weight'), 0,
                                int(part.pop('weight', 0)))
-        entity['lat'] = part.pop('lat') or entity.get('lat')
-        entity['lng'] = part.pop('lng') or entity.get('lng')
+        entity['lat'] = part.pop('lat', None) or entity.get('lat')
+        entity['lng'] = part.pop('lng', None) or entity.get('lng')
 
         for key, value in part.items():
             if value is None:
