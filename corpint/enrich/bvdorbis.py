@@ -5,7 +5,7 @@ from pprint import pprint  # noqa
 import zeep
 from zeep.exceptions import TransportError
 
-from corpint.schema import PERSON, COMPANY, ORGANIZATION
+from corpint.schema import PERSON, COMPANY, ORGANIZATION, OTHER
 
 WSDL = 'https://webservices.bvdep.com/orbis/remoteaccess.asmx?WSDL'
 USERNAME = environ.get('ORBIS_USERNAME', 'occrp_ws')
@@ -211,8 +211,8 @@ def emit_company(origin, client, session, data):
 
 
 def enrich(origin, entity):
-    if entity['type'] in [PERSON]:
-        origin.log.info('BvD Orbis skip person: %(name)s', entity)
+    if entity['type'] not in [OTHER, ORGANIZATION, COMPANY]:
+        origin.log.info('BvD Orbis skip: %(name)s', entity)
         return
 
     if PASSWORD is None:

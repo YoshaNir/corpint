@@ -182,7 +182,7 @@ def emit_entity(origin, entity, links=True):
 
 
 def enrich(origin, entity):
-    if entity['type'] == ASSET:
+    if entity['type'] not in [PERSON, OTHER, ORGANIZATION, COMPANY]:
         return
 
     names = set()

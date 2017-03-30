@@ -4,17 +4,22 @@ COMPANY = 'Company'
 ORGANIZATION = 'Organization'
 PERSON = 'Person'
 ASSET = 'Asset'
-COURT_CASE = 'Court Case'
+COURT_CASE = 'CourtCase'
+BANK = 'Bank'
+BANK_ACCOUNT = 'BankAccount'
 OTHER = None
 
-TYPES = [COMPANY, ORGANIZATION, PERSON, ASSET, COURT_CASE, OTHER]
+TYPES = [COMPANY, ORGANIZATION, PERSON, ASSET, COURT_CASE,
+         BANK, BANK_ACCOUNT, OTHER]
 
 # for entity merging:
 WEIGHTS = {
+    BANK: 6,
     PERSON: 5,
     COMPANY: 4,
     ORGANIZATION: 3,
     ASSET: 2,
+    BANK_ACCOUNT: 2,
     COURT_CASE: 1,
     OTHER: 0
 }

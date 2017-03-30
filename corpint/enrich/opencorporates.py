@@ -5,7 +5,7 @@ from os import environ
 from urllib import quote_plus
 from itertools import count
 
-from corpint.schema import PERSON
+from corpint.schema import PERSON, OTHER, ORGANIZATION, COMPANY
 
 log = logging.getLogger(__name__)
 API_KEY = environ.get('OPENCORPORATES_APIKEY')
@@ -170,6 +170,7 @@ def search_companies(origin, entity):
 
 
 def enrich(origin, entity):
-    search_officers(origin, entity)
-    if entity['type'] not in [PERSON]:
+    if entity['type'] in [OTHER, ORGANIZATION, COMPANY, PERSON]:
+        search_officers(origin, entity)
+    if entity['type'] in [OTHER, ORGANIZATION, COMPANY]:
         search_companies(origin, entity)

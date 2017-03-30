@@ -3,7 +3,7 @@ from hashlib import sha1
 from pprint import pprint  # noqa
 import mwclient
 
-from corpint.schema import COMPANY, ORGANIZATION
+from corpint.schema import PERSON, OTHER
 
 
 ORIGIN = 'wikipedia'
@@ -88,7 +88,7 @@ def page_entity(origin, page, path=None):
 
 def enrich(origin, entity):
     # Assume entries on companies in Wikipedia are pretty useless.
-    if entity['type'] in [COMPANY, ORGANIZATION]:
+    if entity['type'] not in [PERSON, OTHER]:
         return
 
     for lang, site in SITES.items():
