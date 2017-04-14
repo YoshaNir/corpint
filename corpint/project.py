@@ -34,6 +34,10 @@ class Project(object):
         ensure_column(self.mappings, 'judgement_attribution', Unicode)
         ensure_column(self.mappings, 'left_uid', Unicode)
         ensure_column(self.mappings, 'right_uid', Unicode)
+        ensure_column(self.documents, 'uid', Unicode)
+        ensure_column(self.entities, 'uid', Unicode)
+        ensure_column(self.links, 'source', Unicode)
+        ensure_column(self.links, 'target', Unicode)
 
     def origin(self, name):
         return Origin(self, name)
