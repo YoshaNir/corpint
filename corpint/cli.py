@@ -4,6 +4,7 @@ from pprint import pprint  # noqa
 from corpint import project as make_project
 from corpint import env
 from corpint.webui import run_webui
+from corpint.export import export_to_neo4j
 from corpint.integrate import name_merge
 from corpint.integrate import generate_candidates
 
@@ -60,6 +61,14 @@ def namemerge(ctx, origins):
 def searches(ctx):
     for entity in ctx.obj['PROJECT'].iter_searches():
         pprint(entity)
+
+
+@cli.command()
+@click.pass_context
+@click.option('neo4j_uri', '--url', '-u')
+@click.option('tolerance', '--tolerance', '-t', type=float, default=0.85)
+def export_neo4j(ctx, neo4j_uri, tolerance):
+    export_to_neo4j(ctx.obj['PROJECT'], neo4j_uri, tolerance)
 
 
 def main():

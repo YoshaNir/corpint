@@ -82,7 +82,7 @@ def load_entity(project, graph, entity):
         return None, None
 
 
-def load_to_neo4j(project, neo4j_uri=None):
+def export_to_neo4j(project, neo4j_uri=None, tolerance=0.85):
     neo4j_uri = neo4j_uri or env.NEO4J_URI
     if neo4j_uri is None:
         project.log.error("No $NEO4J_URI set, cannot load graph.")
@@ -96,12 +96,25 @@ def load_to_neo4j(project, neo4j_uri=None):
         uid, node = load_entity(project, graph, entity)
         entities[uid] = node
 
+    for m in project.db.query("SELECT * FROM %s_mappings WHERE judgement = 'f'"
+                              "and score >= %d;" % (project.prefix, tolerance)): # noqa
+        source = entities.get(m.get('left_uid'))
+        target = entities.get(m.get('right_uid'))
+        if source is None or target is None or source == target:
+            continue
+        rel = Relationship(source, 'SIMILAR TO', target, **normalise(m))
+        project.log.info(' -> Node [Relationship]: %s - %s'
+                         % (source.get('name'), target.get('name')))
+        graph.create(rel)
+
     for link in project.iter_merged_links():
         source = entities.get(link.pop('source'))
         target = entities.get(link.pop('target'))
         if source is None or target is None or source == target:
             continue
         rel = Relationship(source, 'LINK', target, **normalise(link))
+        project.log.info(' -> Node [Relationship]: %s - %s'
+                         % (source.get('name'), target.get('name')))
         graph.create(rel)
 
     clear_leaf_nodes(graph, 'Name')
