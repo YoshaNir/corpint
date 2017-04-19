@@ -34,6 +34,10 @@ class Project(object):
         ensure_column(self.mappings, 'judgement_attribution', Unicode)
         ensure_column(self.mappings, 'left_uid', Unicode)
         ensure_column(self.mappings, 'right_uid', Unicode)
+        ensure_column(self.documents, 'uid', Unicode)
+        ensure_column(self.entities, 'uid', Unicode)
+        ensure_column(self.links, 'source', Unicode)
+        ensure_column(self.links, 'target', Unicode)
 
     def origin(self, name):
         return Origin(self, name)
@@ -48,18 +52,10 @@ class Project(object):
         if data.get('type') not in TYPES:
             raise ValueError("Invalid entity type: %r", data)
 
-        try:
-            data['weight'] = int(data.get('weight', 0))
-        except Exception:
-            raise ValueError("Invalid weight: %r", data)
-
         if 'country' in data:
             data['country'] = countrynames.to_code(data['country'])
 
-        name = data.get('name')
-        if name is not None:
-            name = stringify(name)
-        data['name'] = name
+        data['name'] = stringify(data.get('name'))
 
         for k, v in data.items():
             if k == 'aliases':
@@ -132,8 +128,8 @@ class Project(object):
 
     def iter_searches(self, min_weight=0):
         for entity in self.iter_merged_entities():
-            if entity['weight'] >= min_weight:
-                yield entity
+            # if entity['tasked']:
+            yield entity
 
     def iter_merged_links(self):
         for link in merge_links(self):

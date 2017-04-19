@@ -43,10 +43,9 @@ def candidates(ctx, threshold, origins):
 @cli.command()
 @click.pass_context
 @click.option('origins', '--origin', '-o', multiple=True)
-@click.option('minweight', '--min-weight', '-w', type=int, default=0)
 @click.argument('enricher')
-def enrich(ctx, origins, minweight, enricher):
-    ctx.obj['PROJECT'].enrich(enricher, origins=origins, min_weight=minweight)
+def enrich(ctx, origins, enricher):
+    ctx.obj['PROJECT'].enrich(enricher, origins=origins)
 
 
 @cli.command()

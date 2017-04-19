@@ -40,8 +40,8 @@ def merge_entity(project, uid_canonical):
         aliases.append(part.pop('name', None))
         entity['type'] = choose_best_type((entity.pop('type', OTHER),
                                            part.pop('type', OTHER)))
-        entity['weight'] = max(entity.get('weight'), 0,
-                               int(part.pop('weight', 0)))
+        entity['tasked'] = max(entity.get('tasked'), False,
+                               part.pop('tasked', False))
         entity['lat'] = part.pop('lat', None) or entity.get('lat')
         entity['lng'] = part.pop('lng', None) or entity.get('lng')
 
@@ -76,7 +76,7 @@ def merge_entity(project, uid_canonical):
     entity['aliases'] = aliases
     entity['uid_parts'] = entity['uid']
     entity['uid'] = uid_canonical
-    if 'weight' not in entity or not len(entity['uid_parts']):
+    if not len(entity['uid_parts']):
         return None
     entity = dict(entity)
     # pprint(entity)

@@ -6,8 +6,7 @@ from corpint.integrate import get_decided, sorttuple
 blueprint = Blueprint('base', __name__)
 
 SKIP_FIELDS = ['id', 'name', 'origin', 'uid', 'uid_canonical',
-               'source_url', 'weight', 'opencorporates_url',
-               'aleph_id']
+               'source_url', 'opencorporates_url', 'aleph_id']
 JUDGEMENTS = {
     'TRUE': True,
     'FALSE': False,
