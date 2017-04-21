@@ -1,11 +1,10 @@
 import logging
 import dataset
 import urlnorm
-import countrynames
 from dalet import parse_country, parse_boolean  # noqa
-from pprint import pprint  # noqa
 from normality import stringify
 from sqlalchemy import Boolean, Unicode, Float
+from pprint import pprint  # noqa
 
 from corpint.origin import Origin
 from corpint.schema import TYPES
@@ -37,6 +36,8 @@ class Project(object):
         ensure_column(self.mappings, 'right_uid', Unicode)
         ensure_column(self.documents, 'uid', Unicode)
         ensure_column(self.entities, 'uid', Unicode)
+        ensure_column(self.entities, 'query_uid', Unicode)
+        ensure_column(self.entities, 'result_uid', Unicode)
         ensure_column(self.links, 'source', Unicode)
         ensure_column(self.links, 'target', Unicode)
 
@@ -105,19 +106,26 @@ class Project(object):
             'title': title,
         }, ['reference'])
 
-    def emit_judgement(self, uida, uidb, judgement,
-                       trained=False, score=None):
+    def emit_judgement(self, uida, uidb, judgement, score=None):
         if uida is None or uidb is None:
             return
         data = {
             'left_uid': max(uida, uidb),
             'right_uid': min(uida, uidb),
-            'judgement': judgement,
-            'trained': trained
+            'judgement': judgement
         }
         if score is not None:
             data['score'] = float(score)
         self.mappings.upsert(data, ['left_uid', 'right_uid'])
+
+    def get_judgement(self, uida, uidb):
+        if uida is None or uidb is None:
+            return
+        data = self.mappings.find_one(left_uid=max(uida, uidb),
+                                      right_uid=min(uida, uidb))
+        if data is None:
+            return None
+        return data.get('judgement')
 
     def integrate(self):
         canonicalise(self)

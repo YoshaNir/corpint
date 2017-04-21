@@ -90,5 +90,5 @@ def scored_post():
         judgement = JUDGEMENTS.get(value)
         if judgement is None:
             offset += 1
-        emit_judgement(left, right, judgement, trained=False)
+        emit_judgement(left, right, judgement)
     return redirect(url_for('.scored_get', offset=offset))

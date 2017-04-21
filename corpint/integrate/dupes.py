@@ -48,7 +48,7 @@ def generate_candidates(project, origins=[], threshold=.5):
     project.log.info("Loaded %s entities.", len(entities))
     decided = get_decided(project)
     project.log.info("Loaded %s decisions.", len(decided))
-    project.mappings.delete(judgement=None)
+    # project.mappings.delete(judgement=None)
 
     for (left, right) in combinations(entities, 2):
         origins_ = set((right.get('origin'), left.get('origin')))
