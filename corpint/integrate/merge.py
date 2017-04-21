@@ -1,6 +1,7 @@
 from pprint import pprint  # noqa
 from collections import defaultdict
 import Levenshtein
+from dalet import parse_boolean
 
 from corpint.integrate.util import sorttuple
 from corpint.schema import choose_best_type, OTHER
@@ -40,8 +41,8 @@ def merge_entity(project, uid_canonical):
         aliases.append(part.pop('name', None))
         entity['type'] = choose_best_type((entity.pop('type', OTHER),
                                            part.pop('type', OTHER)))
-        entity['tasked'] = max(entity.get('tasked'), False,
-                               part.pop('tasked', False))
+        entity['tasked'] = max(parse_boolean(entity.get('tasked')),
+                               parse_boolean(part.pop('tasked')))
         entity['lat'] = part.pop('lat', None) or entity.get('lat')
         entity['lng'] = part.pop('lng', None) or entity.get('lng')
 

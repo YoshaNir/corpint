@@ -23,6 +23,7 @@ setup(
         'normality',
         'dataset>=0.8',
         'requests<=2.11.1',
+        'dalet>=1.1',
         'countrynames',
         'fingerprints',
         'unicodecsv',

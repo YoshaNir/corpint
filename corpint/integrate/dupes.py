@@ -20,11 +20,11 @@ def score_pair(left, right):
         score = max(score, lscore)
 
     if PERSON not in types:
-        score *= .85
+        score *= .9
 
     countries = right.get('country'), left.get('country')
     if None not in countries and len(set(countries)) != 1:
-        score *= 0.9
+        score *= .9
 
     return score
 

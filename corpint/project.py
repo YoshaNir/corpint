@@ -2,6 +2,7 @@ import logging
 import dataset
 import urlnorm
 import countrynames
+from dalet import parse_country, parse_boolean  # noqa
 from pprint import pprint  # noqa
 from normality import stringify
 from sqlalchemy import Boolean, Unicode, Float
@@ -52,9 +53,8 @@ class Project(object):
         if data.get('type') not in TYPES:
             raise ValueError("Invalid entity type: %r", data)
 
-        if 'country' in data:
-            data['country'] = countrynames.to_code(data['country'])
-
+        data['country'] = parse_country(data.get('country'))
+        data['tasked'] = parse_boolean(data.get('tasked'))
         data['name'] = stringify(data.get('name'))
 
         for k, v in data.items():
@@ -128,8 +128,8 @@ class Project(object):
 
     def iter_searches(self, min_weight=0):
         for entity in self.iter_merged_entities():
-            # if entity['tasked']:
-            yield entity
+            if entity.get('tasked'):
+                yield entity
 
     def iter_merged_links(self):
         for link in merge_links(self):
