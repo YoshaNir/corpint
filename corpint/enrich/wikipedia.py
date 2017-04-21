@@ -27,7 +27,7 @@ def page_url(page):
     return 'http://%s/wiki/%s' % (page.site.host, slug)
 
 
-def page_entity(origin, page, path=None):
+def page_entity(emitter, page, path=None):
     if not page.page_title:
         return
 
@@ -38,11 +38,11 @@ def page_entity(origin, page, path=None):
 
     for host in SKIP_HOSTS:
         if host in page.site.host:
-            origin.log.info("Skip [%s]: %s", page.site.host, page.page_title)
+            emitter.log.info("Skip [%s]: %s", page.site.host, page.page_title)
             return
 
     if page.pagelanguage not in SITES.keys():
-        origin.log.info("Skip [%s]: %s", page.site.host, page.page_title)
+        emitter.log.info("Skip [%s]: %s", page.site.host, page.page_title)
         return
 
     while page.redirect:
@@ -51,25 +51,25 @@ def page_entity(origin, page, path=None):
     for template in page.templates():
         if template.name not in DISAMBIGUATION:
             continue
-        origin.log.warning("Disambiguation page: %s", page.name)
+        emitter.log.warning("Disambiguation page: %s", page.name)
         return
 
-    uid = origin.uid(page.pagelanguage, page.name)
+    uid = emitter.uid(page.pagelanguage, page.name)
     aliases = set()
 
-    if origin.entity_exists(uid):
-        origin.log.info("Done [%s]: %s", page.site.host, page.page_title)
+    if emitter.entity_exists(uid):
+        emitter.log.info("Done [%s]: %s", page.site.host, page.page_title)
         return uid
 
-    origin.log.info("Crawl [%s]: %s", page.site.host, page.page_title)
+    emitter.log.info("Crawl [%s]: %s", page.site.host, page.page_title)
 
     for lsite, lemma in page.langlinks():
         aliases.add(lemma)
         site = SITES.get(lsite)
         if site is not None and lsite not in path:
             opage = site.Pages[lemma]
-            ouid = page_entity(origin, opage, path=path)
-            origin.emit_judgement(uid, ouid, True)
+            ouid = page_entity(emitter, opage, path=path)
+            emitter.emit_judgement(uid, ouid, True, decided=True)
 
     for bl in page.backlinks(redirect=True):
         if not bl.redirect:
@@ -77,7 +77,7 @@ def page_entity(origin, page, path=None):
         if bl.redirects_to().page_title == page.page_title:
             aliases.add(bl.page_title)
 
-    origin.emit_entity({
+    emitter.emit_entity({
         'uid': uid,
         'wikipedia_' + page.pagelanguage: page.name,
         'name': page.page_title,
@@ -96,4 +96,6 @@ def enrich(origin, entity):
         for name in entity.get('names', []):
             for res in site.search(name, what='nearmatch', limit=5):
                 page = site.Pages[res.get('title')]
-                page_entity(origin, page)
+                match_uid = origin.uid(page.pagelanguage, page.name)
+                emitter = origin.result(entity.get('uid'), match_uid)
+                page_entity(emitter, page)

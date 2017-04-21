@@ -134,12 +134,12 @@ def map_properties(obj, mapping):
     return data
 
 
-def emit_entity(origin, entity, links=True):
+def emit_entity(emitter, entity, links=True):
     # Skip collection stuff for now.
     if entity.get('dataset') is None:
         return
 
-    entity_uid = origin.uid(entity.get('id'))
+    entity_uid = emitter.uid(entity.get('id'))
     if entity_uid is None:
         return
     data = {
@@ -150,14 +150,14 @@ def emit_entity(origin, entity, links=True):
     }
     data.update(map_properties(entity, ENTITY_PROPERTIES))
     data['type'] = TYPE_MAPPING.get(entity.get('schema'))
-    origin.log.info("[%(dataset)s]: %(name)s", entity)
+    emitter.log.info("[%(dataset)s]: %(name)s", entity)
 
     if links:
         links_url = '%s/%s/links' % (ENTITIES_API, entity.get('id'))
         for link in aleph_paged(links_url):
             remote = link.get('remote')
             links = data.get('type') == ASSET
-            other_uid = emit_entity(origin, remote, links=links)
+            other_uid = emit_entity(emitter, remote, links=links)
             if other_uid is None:
                 continue
             ldata = {
@@ -166,9 +166,9 @@ def emit_entity(origin, entity, links=True):
             }
             ldata.update(map_properties(link, LINK_PROPERTIES))
             ldata.pop('aliases')
-            origin.emit_link(ldata)
+            emitter.emit_link(ldata)
 
-    origin.emit_entity(data)
+    emitter.emit_entity(data)
     return entity_uid
 
 
@@ -195,8 +195,12 @@ def enrich(origin, entity):
         names.add(term)
 
     query = ' OR '.join(names)
-    for entity in aleph_paged(ENTITIES_API, params={'q': query}):
-        emit_entity(origin, entity)
+    for match in aleph_paged(ENTITIES_API, params={'q': query}):
+        match_uid = origin.uid(entity.get('id'))
+        if match_uid is None:
+            continue
+        emitter = origin.result(entity.get('uid'), match_uid)
+        emit_entity(emitter, match)
 
 
 def search_documents(query):

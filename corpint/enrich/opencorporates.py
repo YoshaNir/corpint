@@ -31,7 +31,7 @@ def get_oc_api(url, params=None):
             sleep(i ** 2)
 
 
-def emit_officer(origin, officer, company_url=None, publisher=None):
+def emit_officer(emitter, officer, company_url=None, publisher=None):
     if isinstance(officer.get('officer'), dict):
         officer = officer.get('officer')
 
@@ -39,11 +39,11 @@ def emit_officer(origin, officer, company_url=None, publisher=None):
     if company_url is None and company is not None:
         company_url = company.get('opencorporates_url')
         # always download full company records.
-        get_company(origin, company_url)
+        get_company(emitter, company_url)
 
-    origin.log.info("OC Officer [%(id)s]: %(name)s", officer)
-    officer_uid = origin.uid(officer['opencorporates_url'])
-    origin.emit_entity({
+    emitter.log.info("OC Officer [%(id)s]: %(name)s", officer)
+    officer_uid = emitter.uid(officer['opencorporates_url'])
+    emitter.emit_entity({
         'uid': officer_uid,
         'name': officer['name'],
         'dob': officer.get('date_of_birth'),
@@ -54,8 +54,8 @@ def emit_officer(origin, officer, company_url=None, publisher=None):
     })
 
     if company_url is not None:
-        company_uid = origin.uid(company_url)
-        origin.emit_link({
+        company_uid = emitter.uid(company_url)
+        emitter.emit_link({
             'source': company_uid,
             'target': officer_uid,
             'publisher': publisher,
@@ -67,12 +67,12 @@ def emit_officer(origin, officer, company_url=None, publisher=None):
     return officer_uid
 
 
-def emit_company(origin, company):
+def emit_company(emitter, company):
     if isinstance(company.get('company'), dict):
         company = company.get('company')
 
     company_url = company['opencorporates_url']
-    company_uid = origin.uid(company_url)
+    company_uid = emitter.uid(company_url)
     source = company.get('source', {})
     publisher = source.get('publisher')
 
@@ -83,8 +83,8 @@ def emit_company(origin, company):
             if value is not None:
                 aliases.add(value)
 
-    origin.log.info("OC Company [%(company_number)s]: %(name)s", company)
-    origin.emit_entity({
+    emitter.log.info("OC Company [%(company_number)s]: %(name)s", company)
+    emitter.emit_entity({
         'uid': company_uid,
         'name': company.get('name'),
         'aliases': aliases,
@@ -101,26 +101,26 @@ def emit_company(origin, company):
     })
 
     for officer in company.get('officers', []):
-        emit_officer(origin, officer, company_url=company_url,
+        emit_officer(emitter, officer, company_url=company_url,
                      publisher=publisher)
 
     return company_uid
 
 
-def get_company(origin, opencorporates_url):
-    company_uid = origin.uid(opencorporates_url)
-    if origin.entity_exists(company_uid):
+def get_company(emitter, opencorporates_url):
+    company_uid = emitter.uid(opencorporates_url)
+    if emitter.entity_exists(company_uid):
         return company_uid
     company = get_oc_api(opencorporates_url)
-    return emit_company(origin, company)
+    return emit_company(emitter, company)
 
 
-def get_officer(origin, opencorporates_url):
-    officer_uid = origin.uid(opencorporates_url)
-    if origin.entity_exists(officer_uid):
+def get_officer(emitter, opencorporates_url):
+    officer_uid = emitter.uid(opencorporates_url)
+    if emitter.entity_exists(officer_uid):
         return officer_uid
     officer = get_oc_api(opencorporates_url)
-    return emit_officer(origin, officer)
+    return emit_officer(emitter, officer)
 
 
 def get_grouping(origin, name):
@@ -146,7 +146,11 @@ def search_officers(origin, entity):
         if results is None:
             break
         for officer in results.get('officers'):
-            emit_officer(origin, officer)
+            officer = officer.get('officer')
+            url = officer.get('opencorporates_url')
+            officer_uid = origin.uid(url)
+            emitter = origin.result(entity.get('uid'), officer_uid)
+            emit_officer(emitter, officer)
         if page >= results.get('total_pages'):
             return
 
@@ -165,7 +169,10 @@ def search_companies(origin, entity):
             break
         for company in results.get('companies'):
             company = company.get('company')
-            get_company(origin, company.get('opencorporates_url'))
+            url = company.get('opencorporates_url')
+            company_uid = origin.uid(url)
+            emitter = origin.result(entity.get('uid'), company_uid)
+            get_company(emitter, url)
         if page >= results.get('total_pages'):
             return
 

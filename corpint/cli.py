@@ -65,6 +65,12 @@ def clear(ctx, origin):
 
 @cli.command()
 @click.pass_context
+def clear_mappings(ctx):
+    ctx.obj['PROJECT'].clear_mappings()
+
+
+@cli.command()
+@click.pass_context
 def searches(ctx):
     for entity in ctx.obj['PROJECT'].iter_searches():
         pprint(entity)

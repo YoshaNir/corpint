@@ -75,9 +75,9 @@ def pick_literal(data):
         return label
 
 
-def crawl_entity(origin, cid, recurse=True):
-    uid = origin.uid(cid)
-    if origin.entity_exists(uid):
+def crawl_entity(emitter, cid, recurse=True):
+    uid = emitter.uid(cid)
+    if emitter.entity_exists(uid):
         return uid
 
     data = {
@@ -108,8 +108,8 @@ def crawl_entity(origin, cid, recurse=True):
                 for p, val in crawl_node(value.get('value')):
                     if p == prop:
                         value = val
-            ouid = crawl_entity(origin, value.get('value'), recurse=False)
-            origin.emit_link({
+            ouid = crawl_entity(emitter, value.get('value'), recurse=False)
+            emitter.emit_link({
                 'source': uid,
                 'target': ouid,
                 'summary': LINKS.get(prop)
@@ -119,8 +119,8 @@ def crawl_entity(origin, cid, recurse=True):
         if isinstance(value, dict):
             data[key] = pick_literal(value)
 
-    origin.log.info("Crawled [%(wikidata_id)s]: %(name)s", data)
-    origin.emit_entity(data)
+    emitter.log.info("Crawled [%(wikidata_id)s]: %(name)s", data)
+    emitter.emit_entity(data)
     return uid
 
 
@@ -136,5 +136,7 @@ def enrich(origin, entity):
         for result in run_sparql(query):
             cid = result.get('item').get('value')
             origin.log.info("Wikidata ID [%s]: %s", cid, entity.get('name'))
-            uid = crawl_entity(origin, cid)
-            origin.emit_judgement(uid, entity['uid'], True)
+            match_uid = origin.uid(cid)
+            emitter = origin.result(entity.get('uid'), match_uid)
+            uid = crawl_entity(emitter, cid)
+            origin.emit_judgement(uid, entity['uid'], True, decided=True)

@@ -3,9 +3,10 @@ from itertools import combinations
 from sqlalchemy import Unicode
 
 from corpint.integrate.merge import merge_entities, merge_links  # noqa
-from corpint.integrate.dupes import generate_candidates  # noqa
+from corpint.integrate.dupes import generate_candidates, score_pair  # noqa
+from corpint.integrate.dupes import fingerprint_entity  # noqa
 from corpint.integrate.util import normalize_name, get_clusters
-from corpint.integrate.util import merkle, sorttuple, get_decided  # noqa
+from corpint.integrate.util import sorttuple, get_decided  # noqa
 from corpint.util import ensure_column
 
 
@@ -44,7 +45,7 @@ def canonicalise(project):
     clusters = get_clusters(project)
     project.log.info("Canonicalise: %d clusters", len(clusters))
     for uids in clusters:
-        canon = merkle(uids)
+        canon = max(uids)
         uids = ', '.join(["'%s'" % u for u in uids])
         for (table, src, dest) in updates:
             query = "UPDATE %s SET %s = '%s' WHERE %s IN (%s)"

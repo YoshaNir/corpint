@@ -30,6 +30,7 @@ class Project(object):
         self.documents = self.db['%s_documents' % self.prefix]
 
         ensure_column(self.mappings, 'judgement', Boolean)
+        ensure_column(self.mappings, 'decided', Boolean)
         ensure_column(self.mappings, 'score', Float)
         ensure_column(self.mappings, 'judgement_attribution', Unicode)
         ensure_column(self.mappings, 'left_uid', Unicode)
@@ -37,7 +38,7 @@ class Project(object):
         ensure_column(self.documents, 'uid', Unicode)
         ensure_column(self.entities, 'uid', Unicode)
         ensure_column(self.entities, 'query_uid', Unicode)
-        ensure_column(self.entities, 'result_uid', Unicode)
+        ensure_column(self.entities, 'match_uid', Unicode)
         ensure_column(self.links, 'source', Unicode)
         ensure_column(self.links, 'target', Unicode)
 
@@ -57,6 +58,8 @@ class Project(object):
         data['country'] = parse_country(data.get('country'))
         data['tasked'] = parse_boolean(data.get('tasked'))
         data['name'] = stringify(data.get('name'))
+        data['match_uid'] = data.get('match_uid')
+        data['query_uid'] = data.get('query_uid')
 
         for k, v in data.items():
             if k == 'aliases':
@@ -67,7 +70,7 @@ class Project(object):
 
         # TODO: partial dates
         aliases = data.pop('aliases', [])
-        self.entities.upsert(data, ['origin', 'uid'])
+        self.entities.upsert(data, ['origin', 'uid', 'match_uid', 'query_uid'])
         for alias in aliases:
             self.emit_alias({
                 'name': alias,
@@ -76,6 +79,20 @@ class Project(object):
                 'uid_canonical': data.get('uid_canonical'),
             })
         return data
+
+    def get_entity(self, uid):
+        data = self.entities.find_one(uid=uid)
+        if data is not None:
+            data['aliases'] = []
+            for alias in self.aliases.find(uid=uid):
+                data['aliases'].append(alias.get('name'))
+        return data
+
+    def delete_entity(self, uid):
+        self.entities.delete(uid=uid)
+        self.aliases.delete(uid=uid)
+        self.links.delete(left_uid=uid)
+        self.links.delete(right_uid=uid)
 
     def emit_alias(self, data):
         name = data.get('name') or ''
@@ -106,17 +123,25 @@ class Project(object):
             'title': title,
         }, ['reference'])
 
-    def emit_judgement(self, uida, uidb, judgement, score=None):
+    def emit_judgement(self, uida, uidb, judgement, score=None, decided=False):
         if uida is None or uidb is None:
             return
         data = {
             'left_uid': max(uida, uidb),
             'right_uid': min(uida, uidb),
-            'judgement': judgement
+            'judgement': judgement,
+            'decided': decided
         }
         if score is not None:
             data['score'] = float(score)
         self.mappings.upsert(data, ['left_uid', 'right_uid'])
+
+        if judgement is False:
+            # Remove any entities predicated on this mapping.
+            for entity in self.entities.find(match_uid=uida, query_uid=uidb):
+                self.delete_entity(entity.get('uid'))
+            for entity in self.entities.find(match_uid=uidb, query_uid=uida):
+                self.delete_entity(entity.get('uid'))
 
     def get_judgement(self, uida, uidb):
         if uida is None or uidb is None:
@@ -126,6 +151,9 @@ class Project(object):
         if data is None:
             return None
         return data.get('judgement')
+
+    def clear_mappings(self):
+        self.mappings.delete(judgement=None, decided=False)
 
     def integrate(self):
         canonicalise(self)

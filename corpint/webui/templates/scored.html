@@ -4,8 +4,6 @@
 
 {% block body %}
 
-<p>Please approve the following automatic matches.</p>
-
 <form method="POST">
   <table class="table table-bordered table-hover">
     <thead>
@@ -57,7 +55,7 @@
       {% endfor %}
     {% else %}
       <tr>
-        <td colspan=3>No matches to approve</td>
+        <td colspan="6">No matches to approve</td>
       </tr>
     {% endif %}
   </table>

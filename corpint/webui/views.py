@@ -6,7 +6,8 @@ from corpint.integrate import get_decided, sorttuple
 blueprint = Blueprint('base', __name__)
 
 SKIP_FIELDS = ['id', 'name', 'origin', 'uid', 'uid_canonical',
-               'source_url', 'opencorporates_url', 'aleph_id']
+               'source_url', 'opencorporates_url', 'aleph_id',
+               'match_uid', 'query_uid']
 JUDGEMENTS = {
     'TRUE': True,
     'FALSE': False,
@@ -34,23 +35,18 @@ def scored_get(offset=None):
     project = current_app.project
     decided = get_decided(project)
     project.log.info("Doing extra checks with %s decisions", len(decided))
+    table = project.mappings.table
+    q = table.select()
+    q = q.where(table.c.judgement == None)  # noqa
+    q = q.where(table.c.decided == False)  # noqa
+    q = q.order_by(table.c.score.desc())
+    q = q.limit(int(request.args.get('limit') or 5))
     offset = offset or int(request.args.get('offset') or 0)
-    args = {
-        'table': project.mappings.table.name,
-        'limit': int(request.args.get('limit') or 10),
-        'offset': offset,
-    }
-    query = """
-        SELECT left_uid, right_uid, score
-        FROM %(table)s WHERE judgement IS NULL
-        ORDER BY score DESC
-        LIMIT %(limit)s
-        OFFSET %(offset)s
-    """ % args
+    q = q.offset(offset)
     while True:
         try_again = False
         candidates = []
-        for data in project.db.query(query):
+        for data in project.db.query(q):
             left_uid, right_uid = data['left_uid'], data['right_uid']
             if sorttuple(left_uid, right_uid) in decided:
                 project.mappings.delete(left_uid=left_uid,
@@ -88,7 +84,7 @@ def scored_post():
             continue
         _, left, right = key.split(':', 2)
         judgement = JUDGEMENTS.get(value)
-        if judgement is None:
-            offset += 1
-        emit_judgement(left, right, judgement)
+        # if judgement is None:
+        #     offset += 1
+        emit_judgement(left, right, judgement, decided=True)
     return redirect(url_for('.scored_get', offset=offset))

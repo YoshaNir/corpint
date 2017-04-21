@@ -134,7 +134,7 @@ def get_section(client, session, res, section):
     return parse_xml(res)
 
 
-def link_items(origin, entity, items, summary):
+def link_items(emitter, entity, items, summary):
     other = {'aliases': set()}
     link = {'summary': summary}
     for key, value in items:
@@ -151,22 +151,22 @@ def link_items(origin, entity, items, summary):
                 print 'UNKOWN TYPE', [value]
         else:
             other[key] = value
-    other['uid'] = origin.uid(other.get('bvd_id'))
+    other['uid'] = emitter.uid(other.get('bvd_id'))
     if other['uid'] is None or other['name'] is None:
         return
     other['name'] = other['name'].replace('via its funds', '')
-    origin.log.info("Associated [%(bvd_id)s]: %(name)s", other)
-    origin.emit_entity(other)
+    emitter.log.info("Associated [%(bvd_id)s]: %(name)s", other)
+    emitter.emit_entity(other)
     link['source'] = entity['uid']
     link['target'] = other['uid']
-    origin.emit_link(link)
+    emitter.emit_link(link)
 
 
-def emit_company(origin, client, session, data):
+def emit_company(emitter, client, session, data):
     if data.Hint in ['UnlikelyCandidate']:
         return
     entity = {
-        'uid': origin.uid(data.BvDID),
+        'uid': emitter.uid(data.BvDID),
         'name': data.Name,
         'bvd_id': data.BvDID,
         'type': 'Company',
@@ -188,13 +188,13 @@ def emit_company(origin, client, session, data):
             else:
                 entity[key] = value
 
-    origin.log.info("Company [%(bvd_id)s]: %(name)s", entity)
-    origin.emit_entity(entity)
+    emitter.log.info("Company [%(bvd_id)s]: %(name)s", entity)
+    emitter.emit_entity(entity)
 
     for section in ['CONTROLLINGSHAREHOLDERS', 'CURRENTSHAREHOLDERS',
                     'SHAREHOLDERSHISTORY']:
         for item in get_section(client, session, res, section):
-            link_items(origin, entity, item, section)
+            link_items(emitter, entity, item, section)
 
     # for section in ['CONTACTS_CURR', 'CONTACTS_PREV']:
     #     for item in get_section(client, session, res, section):
@@ -204,10 +204,10 @@ def emit_company(origin, client, session, data):
     # this workaround is dependent on setting up a specific list type, called
     # directors, in your orbis account.
     for item in get_list_data(client, session, res, 'Directors'):
-        link_items(origin, entity, item, 'Contact')
+        link_items(emitter, entity, item, 'Contact')
 
     for item in get_section(client, session, res, 'CURRENTSUBSIDIARIES'):
-        link_items(origin, entity, item, 'Subsidiary')
+        link_items(emitter, entity, item, 'Subsidiary')
 
 
 def enrich(origin, entity):
@@ -232,7 +232,9 @@ def enrich(origin, entity):
         res = client.service.Match(session, ct, ['None'])
         if res is not None:
             for data in res:
-                emit_company(origin, client, session, data)
+                match_uid = origin.uid(data.BvDID)
+                emitter = origin.result(entity.get('uid'), match_uid)
+                emit_company(emitter, client, session, data)
     except TransportError as terr:
         origin.log.exception(terr)
     finally:
