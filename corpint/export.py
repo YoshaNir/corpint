@@ -82,7 +82,7 @@ def load_entity(project, graph, entity):
         return None, None
 
 
-def export_to_neo4j(project, neo4j_uri=None, tolerance=0.85):
+def export_to_neo4j(project, neo4j_uri=None):
     neo4j_uri = neo4j_uri or env.NEO4J_URI
     if neo4j_uri is None:
         project.log.error("No $NEO4J_URI set, cannot load graph.")
@@ -97,7 +97,7 @@ def export_to_neo4j(project, neo4j_uri=None, tolerance=0.85):
         entities[uid] = node
 
     for m in project.mappings: # noqa
-        if m.get('judgement') is None or m.get('score') <= tolerance:
+        if m.get('judgement') is not None:
             continue
         source = entities.get(m.get('left_uid'))
         target = entities.get(m.get('right_uid'))
@@ -114,7 +114,7 @@ def export_to_neo4j(project, neo4j_uri=None, tolerance=0.85):
         if source is None or target is None or source == target:
             continue
         rel = Relationship(source, 'LINK', target, **normalise(link))
-        project.log.info(' -> Link [Relationship]: %s - %s'
+        project.log.info(' -> Link [LINK]: %s - %s'
                          % (source.get('name'), target.get('name')))
         graph.create(rel)
 

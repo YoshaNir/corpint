@@ -65,9 +65,8 @@ def searches(ctx):
 @cli.command()
 @click.pass_context
 @click.option('neo4j_uri', '--url', '-u')
-@click.option('tolerance', '--tolerance', '-t', type=float, default=0.85)
 def export_neo4j(ctx, neo4j_uri, tolerance):
-    export_to_neo4j(ctx.obj['PROJECT'], neo4j_uri, tolerance)
+    export_to_neo4j(ctx.obj['PROJECT'], neo4j_uri)
 
 
 def main():
