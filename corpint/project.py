@@ -126,6 +126,8 @@ class Project(object):
     def emit_judgement(self, uida, uidb, judgement, score=None, decided=False):
         if uida is None or uidb is None:
             return
+        if judgement is not None:
+            decided = True
         data = {
             'left_uid': max(uida, uidb),
             'right_uid': min(uida, uidb),
