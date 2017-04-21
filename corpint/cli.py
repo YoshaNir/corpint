@@ -57,6 +57,14 @@ def namemerge(ctx, origins):
 
 @cli.command()
 @click.pass_context
+@click.argument('origin')
+def clear(ctx, origin):
+    origin = ctx.obj['PROJECT'].origin(origin)
+    origin.clear()
+
+
+@cli.command()
+@click.pass_context
 def searches(ctx):
     for entity in ctx.obj['PROJECT'].iter_searches():
         pprint(entity)
