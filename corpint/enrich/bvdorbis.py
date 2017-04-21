@@ -212,7 +212,7 @@ def emit_company(origin, client, session, data):
 
 def enrich(origin, entity):
     if entity['type'] not in [OTHER, ORGANIZATION, COMPANY]:
-        origin.log.info('BvD Orbis skip: %(name)s', entity)
+        origin.log.info('Orbis skip: %(name)s', entity)
         return
 
     if PASSWORD is None:
@@ -227,8 +227,8 @@ def enrich(origin, entity):
         # print client.service.GetAvailableModels(session)
 
         MatchCriteria = client.get_type('ns0:MatchCriteria')
-        ct = MatchCriteria(Name=entity.get('name'))
-        #                   Country=entity.get('country'))
+        ct = MatchCriteria(Name=entity.get('name'),
+                           Country=entity.get('country'))
         res = client.service.Match(session, ct, ['None'])
         if res is not None:
             for data in res:

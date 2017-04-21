@@ -4,6 +4,7 @@ from time import sleep
 from os import environ
 from urllib import quote_plus
 from itertools import count
+from pprint import pprint  # noqa
 
 from corpint.schema import PERSON, OTHER, ORGANIZATION, COMPANY
 
@@ -157,7 +158,7 @@ def search_companies(origin, entity):
             'q': entity.get('name'),
             'page': page
         }
-        if entity.get('jurisdiction'):
+        if entity.get('country'):
             params['country_code'] = entity.get('country')
         results = get_oc_api(COMPANY_SEARCH_API, params=params)
         if results is None:
