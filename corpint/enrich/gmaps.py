@@ -60,9 +60,10 @@ def enrich(origin, entity):
     for uid in entity['uid_parts']:
         entity = origin.project.entities.find_one(uid=uid)
         address = entity.get('address')
-        if address is None or entity.get('normalized_address') is not None:
+        if address is None or entity.get('address_canonical') is not None:
             continue
-        origin.log.info("Geocoding: %s", address)
+        origin.log.info("Geocoding [%s] %s @ %s", entity.get('origin'),
+                        entity.get('name'), address)
         address = tidy_address(address)
         if address is None:
             return
@@ -71,10 +72,10 @@ def enrich(origin, entity):
             origin.log.info("Geocoder found no results: %s" % address)
             continue
         for result in gmaps.geocode(address):
-            entity['address_canonical'] = result['formatted_address']
-            entity['lat'] = result['geometry']['location']['lat']
-            entity['lng'] = result['geometry']['location']['lng']
-            entity['geocode_type'] = result['geometry']['location_type']
-            # origin.log.info("Geocoder found results: %s" % address)
-            origin.project.emit_entity(entity)
+            origin.project.entities.update({
+                'address': address,
+                'address_canonical': result['formatted_address'],
+                'lat': result['geometry']['location']['lat'],
+                'lng': result['geometry']['location']['lng']
+            }, ['address'])
             break
