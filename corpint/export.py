@@ -33,19 +33,19 @@ def load_entity(project, graph, entity):
         tx.create(node)
 
         # create "Name" fake nodes
-        fps = set()
-        for name in entity.get('names', []):
-            fp = fingerprints.generate(name)
-            if fp is None:
-                continue
-            fp = fp.replace(' ', '-')
-            if fp in fps:
-                continue
-            fps.add(fp)
-            alias = Node('Name', name=name, fp=fp)
-            tx.merge(alias, 'Name', 'fp')
-            rel = Relationship(node, 'ALIAS', alias)
-            tx.create(rel)
+        # fps = set()
+        # for name in entity.get('names', []):
+        #     fp = fingerprints.generate(name)
+        #     if fp is None:
+        #         continue
+        #     fp = fp.replace(' ', '-')
+        #     if fp in fps:
+        #         continue
+        #     fps.add(fp)
+        #     alias = Node('Name', name=name, fp=fp)
+        #     tx.merge(alias, 'Name', 'fp')
+        #     rel = Relationship(node, 'ALIAS', alias)
+        #     tx.create(rel)
 
         addrfps = set()
         addresses = list(entity.get('address_canonical')) \
@@ -96,14 +96,15 @@ def export_to_neo4j(project, neo4j_uri=None, tolerance=0.85):
         uid, node = load_entity(project, graph, entity)
         entities[uid] = node
 
-    for m in project.db.query("SELECT * FROM %s_mappings WHERE judgement = 'f'"
-                              "and score >= %d;" % (project.prefix, tolerance)): # noqa
+    for m in project.mappings: # noqa
+        if m.get('judgement') is None or m.get('score') <= tolerance:
+            continue
         source = entities.get(m.get('left_uid'))
         target = entities.get(m.get('right_uid'))
         if source is None or target is None or source == target:
             continue
-        rel = Relationship(source, 'SIMILAR TO', target, **normalise(m))
-        project.log.info(' -> Node [Relationship]: %s - %s'
+        rel = Relationship(source, 'SIMILAR', target, **normalise(m))
+        project.log.info(' -> Link [SIMILAR]: %s - %s'
                          % (source.get('name'), target.get('name')))
         graph.create(rel)
 
@@ -113,10 +114,10 @@ def export_to_neo4j(project, neo4j_uri=None, tolerance=0.85):
         if source is None or target is None or source == target:
             continue
         rel = Relationship(source, 'LINK', target, **normalise(link))
-        project.log.info(' -> Node [Relationship]: %s - %s'
+        project.log.info(' -> Link [Relationship]: %s - %s'
                          % (source.get('name'), target.get('name')))
         graph.create(rel)
 
     clear_leaf_nodes(graph, 'Name')
-    # clear_leaf_nodes(graph, 'Address')
-    # clear_leaf_nodes(graph, 'Document')
+    clear_leaf_nodes(graph, 'Address')
+    clear_leaf_nodes(graph, 'Document')
