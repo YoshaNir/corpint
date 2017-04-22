@@ -7,7 +7,7 @@ from corpint.integrate.merge import merge_entities, merge_links  # noqa
 from corpint.integrate.util import get_decided, sorttuple
 from corpint.schema import ASSET, PERSON
 
-IDENTIFIERS = ['aleph_id', 'opencorporates_url', 'bvd_id']
+IDENTIFIERS = ['aleph_id', 'opencorporates_url', 'bvd_id', 'wikidata_id']
 
 
 def score_pair(left, right):
@@ -27,15 +27,15 @@ def score_pair(left, right):
         score = max(score, lscore)
 
     if PERSON not in types:
-        score *= .9
+        score *= .90
 
     countries = right.get('country'), left.get('country')
-    if None not in countries and len(set(countries)) != 1:
-        score *= .9
+    if None in countries or len(set(countries)) != 1:
+        score *= 0.95
 
     regnr = right.get('registration_number'), left.get('registration_number')
     if None not in regnr and len(set(regnr)) != 1:
-        score *= .9
+        score *= .90
 
     if True not in (right.get('tasked'), left.get('tasked')):
         score *= .95

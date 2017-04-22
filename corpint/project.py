@@ -32,7 +32,6 @@ class Project(object):
         ensure_column(self.mappings, 'judgement', Boolean)
         ensure_column(self.mappings, 'decided', Boolean)
         ensure_column(self.mappings, 'score', Float)
-        ensure_column(self.mappings, 'judgement_attribution', Unicode)
         ensure_column(self.mappings, 'left_uid', Unicode)
         ensure_column(self.mappings, 'right_uid', Unicode)
         ensure_column(self.documents, 'uid', Unicode)
@@ -40,7 +39,9 @@ class Project(object):
         ensure_column(self.entities, 'query_uid', Unicode)
         ensure_column(self.entities, 'match_uid', Unicode)
         ensure_column(self.links, 'source', Unicode)
+        ensure_column(self.links, 'source_canonical', Unicode)
         ensure_column(self.links, 'target', Unicode)
+        ensure_column(self.links, 'target_canonical', Unicode)
 
     def origin(self, name):
         return Origin(self, name)

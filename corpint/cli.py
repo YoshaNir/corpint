@@ -5,8 +5,9 @@ from corpint import project as make_project
 from corpint import env
 from corpint.webui import run_webui
 from corpint.export import export_to_neo4j
-from corpint.integrate import name_merge
-from corpint.integrate import generate_candidates
+from corpint.integrate import name_merge, generate_candidates
+from corpint.integrate import export_mappings as export_mappings_
+from corpint.integrate import import_mappings as import_mappings_
 
 
 @click.group()
@@ -79,8 +80,22 @@ def searches(ctx):
 @cli.command()
 @click.pass_context
 @click.option('neo4j_uri', '--url', '-u')
-def export_neo4j(ctx, neo4j_uri, tolerance):
+def export_neo4j(ctx, neo4j_uri):
     export_to_neo4j(ctx.obj['PROJECT'], neo4j_uri)
+
+
+@cli.command()
+@click.pass_context
+@click.argument('filename')
+def export_mappings(ctx, filename):
+    export_mappings_(ctx.obj['PROJECT'], filename)
+
+
+@cli.command()
+@click.pass_context
+@click.argument('filename')
+def import_mappings(ctx, filename):
+    import_mappings_(ctx.obj['PROJECT'], filename)
 
 
 def main():

@@ -178,6 +178,7 @@ def search_companies(origin, entity):
 
 
 def enrich(origin, entity):
+    origin.log.info('Search OC: %s', entity.get('name'))
     if entity['type'] in [OTHER, ORGANIZATION, COMPANY, PERSON]:
         search_officers(origin, entity)
     if entity['type'] in [OTHER, ORGANIZATION, COMPANY]:
