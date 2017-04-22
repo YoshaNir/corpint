@@ -27,32 +27,3 @@ def name_merge(project, origins):
         project.log.info("Merge: %s (%d matches)", name, len(uids))
         for (left, right) in combinations(uids, 2):
             project.emit_judgement(left, right, True)
-
-
-def export_mappings(project, file_name):
-    with open(file_name, 'w') as fh:
-        writer = DictWriter(fh, fieldnames=['left_uid', 'right_uid',
-                                            'judgement'])
-        writer.writeheader()
-        for mapping in project.mappings.find(decided=True):
-            writer.writerow({
-                'left_uid': mapping.get('left_uid'),
-                'right_uid': mapping.get('right_uid'),
-                'judgement': mapping.get('judgement')
-            })
-
-
-def import_mappings(project, file_name):
-    with open(file_name, 'r') as fh:
-        for row in DictReader(fh):
-            judgement = parse_boolean(row.get('judgement'), None)
-            score = None
-            if judgement is None:
-                left = project.get_entity(row.get('left_uid'))
-                right = project.get_entity(row.get('left_uid'))
-                if left is not None and right is not None:
-                    score = score_pair(fingerprint_entity(left),
-                                       fingerprint_entity(right))
-            project.emit_judgement(row.get('left_uid'),
-                                   row.get('right_uid'),
-                                   judgement, score=score, decided=True)

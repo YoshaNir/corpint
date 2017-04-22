@@ -40,7 +40,7 @@ def score_pair(left, right):
     if True not in (right.get('tasked'), left.get('tasked')):
         score *= .95
 
-    return score
+    return min(1.0, score)
 
 
 def fingerprint_entity(entity):

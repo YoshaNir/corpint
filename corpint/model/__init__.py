@@ -1,19 +1,19 @@
 import logging
 from sqlalchemy import create_engine
-from corpint.project import Project
-from corpint.common import Base
-from corpint.env import DATABASE_URI, PROJECT
+from sqlalchemy.orm import scoped_session, sessionmaker
+from corpint.model.project import Project  # noqa
+from corpint.model.entity import Entity  # noqa
+from corpint.model.mapping import Mapping  # noqa
+from corpint.model.common import Base
 
 log = logging.getLogger(__name__)
 
 
-def init_project(database_uri, name):
-    """Connect to the database and create a project."""
-    database_uri = database_uri or DATABASE_URI
+def create_session(database_uri):
+    """Connect to the database and create the tables."""
     if database_uri is None:
         raise RuntimeError("No $DATABASE_URI is set, aborting.")
-    name = name or PROJECT
-    log.info("Project [%s], connected to: %s", name, database_uri)
     engine = create_engine(database_uri)
     Base.metadata.create_all(engine)
-    return Project(name, engine)
+    session_factory = sessionmaker(bind=engine)
+    return scoped_session(session_factory)

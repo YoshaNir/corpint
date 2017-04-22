@@ -42,8 +42,8 @@
           {% for field in candidate.fields %}
             <tr>
               <td>{{field | capitalize}}</td>
-              <td>{{candidate.left[field] or ''}}</td>
-              <td>{{candidate.right[field] or ''}}</td>
+              <td>{{candidate.left.data[field] or ''}}</td>
+              <td>{{candidate.right.data[field] or ''}}</td>
             </tr>
           {% endfor %}
           <tr>

@@ -2,15 +2,15 @@ import logging
 from hashlib import sha1
 from normality import stringify
 
-from corprint.model.mapping import Mapping
-from corprint.model.entity import Entity
+from corpint.core import session, project
+from corpint.model.mapping import Mapping
+from corpint.model.entity import Entity
 
 
 class Emitter(object):
     """Emitters are used to generate entities within the database."""
 
-    def __init__(self, project, origin, query_uid=None, match_uid=None):
-        self.project = project
+    def __init__(self, origin, query_uid=None, match_uid=None):
         self.origin = stringify(origin)
         if self.origin is None:
             raise ValueError("Invalid origin")
@@ -18,11 +18,12 @@ class Emitter(object):
         self.log = logging.getLogger('%s.%s' % (project.name, self.origin))
         self.query_uid = query_uid
         self.match_uid = match_uid
+        self.judgement = False
         self.disabled = False
 
         if query_uid and match_uid:
-            judgement = Mapping.get_judgement(project, query_uid, match_uid)
-            self.disabled = judgement is False
+            self.judgement = Mapping.get_judgement(query_uid, match_uid)
+            self.disabled = self.judgement is False
 
     def uid(self, *args):
         """Generate a unique identifier for an entity."""
@@ -42,48 +43,50 @@ class Emitter(object):
         """Create or update an entity in the context of this emitter."""
         if self.disabled:
             return
-        entity = Entity.save(self.project, data, self.origin,
+        entity = Entity.save(data, self.origin,
                              query_uid=self.query_uid,
                              match_uid=self.match_uid)
-        self.project.session.commit()
+        if self.judgement is None and entity.uid == self.match_uid:
+            # Generate a tentative mapping.
+            query = Entity.get(self.query_uid)
+            Mapping.save(self.match_uid, self.query_uid,
+                         None, score=query.compare(entity))
+        session.commit()
         return entity
 
     def emit_judgement(self, uida, uidb, judgement, score=None, decided=False):
         """Change the record linkage status of two entities."""
         if self.disabled:
             return
-        mapping = Mapping.save(self.project, uida, uidb, judgement,
-                               decided=decided, score=score)
-        self.project.session.commit()
-        return mapping
+        return project.emit_judgement(uida, uidb, judgement, decided=decided,
+                                      score=score)
 
     def clear(self):
-        Entity.delete_by_origin(self.project, self.origin,
+        Entity.delete_by_origin(self.origin,
                                 query_uid=self.query_uid,
                                 match_uid=self.match_uid)
-        self.project.session.commit()
+        session.commit()
 
 
 class OriginEmitter(Emitter):
     """Generate entities without a result context."""
 
-    def __init__(self, project, name):
-        super(OriginEmitter, self).__init__(project, name)
+    def __init__(self, name):
+        super(OriginEmitter, self).__init__(name)
 
     def result(self, query_uid, match_uid):
         """Create an emitter for a specific result."""
         return ResultEmitter(self, query_uid, match_uid)
 
     def __repr__(self):
-        return '<OriginEmitter(%r, %r)>' % (self.project.name, self.origin)
+        return '<OriginEmitter(%r)>' % (self.origin)
 
 
 class ResultEmitter(Emitter):
     """Generate entities inside a result context."""
 
     def __init__(self, origin, query_uid, match_uid):
-        super(OriginEmitter, self).__init__(origin.project,
-                                            origin.origin,
+        super(OriginEmitter, self).__init__(origin.origin,
                                             query_uid=query_uid,
                                             match_uid=match_uid)
 
@@ -95,7 +98,6 @@ class ResultEmitter(Emitter):
         # TODO: generate score / mapping candidate
 
     def __repr__(self):
-        return '<ResultEmitter(%r, %r, %r, %r)>' % (self.project.name,
-                                                    self.origin,
-                                                    self.query_uid,
-                                                    self.match_uid)
+        return '<ResultEmitter(%r, %r, %r)>' % (self.origin,
+                                                self.query_uid,
+                                                self.match_uid)

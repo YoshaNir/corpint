@@ -1,99 +1,119 @@
 import click
 from pprint import pprint  # noqa
+from dalet import parse_boolean
+from unicodecsv import DictReader, DictWriter
 
-from corpint import project as make_project
+# from corpint import project as make_project
+from corpint.core import config, project
+from corpint.model import Mapping, Entity
 from corpint.webui import run_webui
 from corpint.export import export_to_neo4j
-from corpint.integrate import name_merge, generate_candidates
-from corpint.integrate import export_mappings as export_mappings_
-from corpint.integrate import import_mappings as import_mappings_
 
 
 @click.group()
 @click.option('--debug/--no-debug', default=False)
-@click.option('--db', envvar='DATABASE_URI')
+@click.option('database_uri', '--db', envvar='DATABASE_URI')
 @click.option('name', '--project', envvar='CORPINT_PROJECT')
-@click.pass_context
-def cli(ctx, debug, db, name):
-    ctx.obj['PROJECT'] = make_project(name, db)
+def cli(debug, database_uri, name):
+    config.debug = debug
+    config.database_uri = database_uri
+    config.project_name = name
 
 
-@cli.command()
-@click.pass_context
-def webui(ctx):
-    run_webui(ctx.obj['PROJECT'])
+@cli.group()
+def mappings():
+    """Manage record linkage mappings."""
 
 
-@cli.command()
-@click.pass_context
-def integrate(ctx):
-    ctx.obj['PROJECT'].integrate()
-
-
-@cli.command()
-@click.pass_context
+@mappings.command('generate')
 @click.option('threshold', '--threshold', '-t', type=float, default=0.5)
 @click.option('origins', '--origin', '-o', multiple=True)
-def candidates(ctx, threshold, origins):
-    generate_candidates(ctx.obj['PROJECT'], origins=origins,
-                        threshold=threshold)
+def mappings_generate(threshold, origins):
+    """Compare all entities and generate candidates."""
+    Mapping.generate_scored_mappings(origins=origins, threshold=threshold)
+
+
+@mappings.command('apply')
+def mappings_apply():
+    """Apply mapped canonical IDs to all entities."""
+    Mapping.canonicalize()
+
+
+@mappings.command('cleanup')
+def mappings_cleanup():
+    """Delete undecided generated mappings."""
+    Mapping.cleanup()
+
+
+@mappings.command('export')
+@click.argument('file', type=click.File('wb'))
+def mappings_export(file):
+    """Export decided mappings to a CSV file."""
+    writer = DictWriter(file, fieldnames=['left', 'right', 'judgement'])
+    writer.writeheader()
+    for mapping in Mapping.find_decided():
+        writer.writerow({
+            'left': mapping.left_uid,
+            'right': mapping.right_uid,
+            'judgement': mapping.judgement
+        })
+
+
+@mappings.command('import')
+@click.argument('file', type=click.File('rb'))
+def mappings_import(file):
+    """Load decided mappings from a CSV file."""
+    for row in DictReader(file):
+        left_uid = row.get('left')
+        right_uid = row.get('right')
+        judgement = parse_boolean(row.get('judgement'), default=None)
+        score = None
+        if judgement is None:
+            left = Entity.get(left_uid)
+            right = Entity.get(right_uid)
+            score = left.compare(right)
+        project.emit_judgement(left_uid, right_uid, judgement,
+                               score=score, decided=True)
 
 
 @cli.command()
-@click.pass_context
+def webui():
+    run_webui()
+
+
+@cli.command()
 @click.option('origins', '--origin', '-o', multiple=True)
 @click.argument('enricher')
-def enrich(ctx, origins, enricher):
-    ctx.obj['PROJECT'].enrich(enricher, origins=origins)
+def enrich(origins, enricher):
+    project.enrich(enricher, origins=origins)
+
+
+# @cli.command()
+# @click.pass_context
+# @click.option('origins', '--origin', '-o', multiple=True)
+# def namemerge(ctx, origins):
+#     name_merge(ctx.obj['PROJECT'], origins)
 
 
 @cli.command()
-@click.pass_context
-@click.option('origins', '--origin', '-o', multiple=True)
-def namemerge(ctx, origins):
-    name_merge(ctx.obj['PROJECT'], origins)
-
-
-@cli.command()
-@click.pass_context
 @click.argument('origin')
-def clear(ctx, origin):
+def clear(origin):
+    """Delete all the data from an origin."""
     origin = ctx.obj['PROJECT'].origin(origin)
     origin.clear()
 
 
 @cli.command()
-@click.pass_context
-def clear_mappings(ctx):
-    ctx.obj['PROJECT'].clear_mappings()
-
-
-@cli.command()
-@click.pass_context
-def searches(ctx):
+def searches():
     for entity in ctx.obj['PROJECT'].iter_searches():
         pprint(entity)
 
 
 @cli.command()
-@click.pass_context
 @click.option('neo4j_uri', '--url', '-u')
-def export_neo4j(ctx, neo4j_uri):
-    export_to_neo4j(ctx.obj['PROJECT'], neo4j_uri)
+def export_neo4j(neo4j_uri):
+    export_to_neo4j(neo4j_uri)
 
-
-@cli.command()
-@click.pass_context
-@click.argument('filename')
-def export_mappings(ctx, filename):
-    export_mappings_(ctx.obj['PROJECT'], filename)
-
-
-@cli.command()
-@click.pass_context
-@click.argument('filename')
-def import_mappings(ctx, filename):
-    import_mappings_(ctx.obj['PROJECT'], filename)
 
 
 def main():
