@@ -95,14 +95,6 @@ class Project(object):
         self.links.delete(left_uid=uid)
         self.links.delete(right_uid=uid)
 
-    def emit_alias(self, data):
-        name = data.get('name') or ''
-        name = name.strip()
-        if not len(name):
-            return
-        data['name'] = name
-        self.aliases.upsert(data, ['origin', 'uid', 'name'])
-
     def emit_link(self, data):
         if data['source'] is None or data['target'] is None:
             return

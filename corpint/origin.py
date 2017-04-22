@@ -24,10 +24,6 @@ class Origin(object):
     def entity_exists(self, uid):
         return self.project.entities.find_one(uid=uid, origin=self.name)
 
-    def emit_alias(self, data):
-        data['origin'] = self.name
-        self.project.emit_alias(data)
-
     def emit_link(self, data):
         data['origin'] = self.name
         self.project.emit_link(data)
@@ -94,12 +90,6 @@ class Result(object):
             data.pop('fps', None)
 
         self.origin.emit_entity(data)
-
-    def emit_alias(self, data):
-        if self.judgement is False:
-            return
-
-        self.origin.emit_alias(data)
 
     def emit_link(self, data):
         if self.judgement is False:

@@ -2,7 +2,6 @@ import click
 from pprint import pprint  # noqa
 
 from corpint import project as make_project
-from corpint import env
 from corpint.webui import run_webui
 from corpint.export import export_to_neo4j
 from corpint.integrate import name_merge, generate_candidates
@@ -13,11 +12,10 @@ from corpint.integrate import import_mappings as import_mappings_
 @click.group()
 @click.option('--debug/--no-debug', default=False)
 @click.option('--db', envvar='DATABASE_URI')
-@click.option('prefix', '--project', envvar='CORPINT_PROJECT')
+@click.option('name', '--project', envvar='CORPINT_PROJECT')
 @click.pass_context
-def cli(ctx, debug, db, prefix):
-    env.DEBUG = env.DEBUG or debug
-    ctx.obj['PROJECT'] = make_project(prefix, db)
+def cli(ctx, debug, db, name):
+    ctx.obj['PROJECT'] = make_project(name, db)
 
 
 @cli.command()
