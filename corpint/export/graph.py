@@ -37,7 +37,6 @@ def load_entities(graph):
 def load_links(graph, entities):
     """Load explicit links into the graph."""
     tx = graph.begin()
-    entities = {}
     project.log.info("Loading %s links...", Link.find().count())
     try:
         for link in Link.find():
@@ -57,17 +56,17 @@ def load_links(graph, entities):
 def load_mappings(graph, entities):
     """Load mappings which are decided but unsure."""
     tx = graph.begin()
-    entities = {}
     q = Mapping.find_decided()
     q = q.filter(Mapping.judgement == None)  # noqa
     project.log.info("Loading %s mappings...", q.count())
     try:
         for mapping in q:
-            source = entities.get(mapping.left_uid)
-            target = entities.get(mapping.right_uid)
-            if source is None or target is None:
+            left = entities.get(mapping.left_uid)
+            right = entities.get(mapping.right_uid)
+            if left is None or right is None:
                 continue
-            rel = Relationship(source, 'SIMILAR', target, score=mapping.score)
+            rel = Relationship(left, 'SIMILAR', right,
+                               score=mapping.score)
             tx.create(rel)
         tx.commit()
     except Exception:
@@ -84,6 +83,7 @@ def export_to_neo4j():
     graph = Graph(config.neo4j_uri)
     graph.run('MATCH (n) DETACH DELETE n')
 
+    Mapping.canonicalize()
     entities = load_entities(graph)
     load_links(graph, entities)
     load_mappings(graph, entities)
