@@ -3,6 +3,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import scoped_session, sessionmaker
 from corpint.model.project import Project  # noqa
 from corpint.model.entity import Entity  # noqa
+from corpint.model.link import Link  # noqa
 from corpint.model.mapping import Mapping  # noqa
 from corpint.model.common import Base
 

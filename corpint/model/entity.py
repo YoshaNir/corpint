@@ -3,26 +3,35 @@ import fingerprints
 from sqlalchemy import Column, Unicode, Boolean, Integer
 from sqlalchemy.dialects.postgresql import JSONB
 from itertools import product
-from dalet import parse_country, parse_boolean
+from collections import Counter, defaultdict
+from dalet import parse_boolean
 
 from corpint.core import session, project
-from corpint.model.common import Base, UID_LENGTH
+from corpint.model.common import Base, SchemaObject, UID_LENGTH
+from corpint.model.schema import choose_best_schema
 from corpint.model.schema import TYPES, ASSET, PERSON
 
 IDENTIFIERS = ['aleph_id', 'opencorporates_url', 'bvd_id', 'wikidata_id']
 
 
-class EntityCore(object):
+class EntityCore(SchemaObject):
 
     @property
     def name(self):
         return self.data.get('name')
 
     @property
+    def country(self):
+        country = self.data.get('country')
+        if country is not None:
+            country = country.upper()
+        return country
+
+    @property
     def names(self):
-        yield self.data.get('name')
-        for alias in self.data.get('aliases', []):
-            yield alias
+        names = set(self.data.get('aliases', []))
+        names.add(self.name)
+        return names
 
     @property
     def fingerprints(self):
@@ -53,7 +62,7 @@ class EntityCore(object):
         if PERSON not in schemata:
             score *= .95
 
-        countries = self.data.get('country'), other.data.get('country')
+        countries = self.country, other.country
         if None in countries or len(set(countries)) != 1:
             score *= .95
 
@@ -66,6 +75,45 @@ class EntityCore(object):
             score *= .95
 
         return min(1.0, score)
+
+
+class CompositeEntity(EntityCore):
+
+    def __init__(self, entities):
+        self.entities = tuple(entities)
+        self.active = True
+        self.uids = [e.uid for e in self.entities]
+        self.uid = max([e.canonical_uid for e in self.entities])
+        self.tasked = max([e.tasked for e in self.entities])
+        self.schema = choose_best_schema([e.schema for e in self.entities])
+        self.data = self._combine_data([e.data for e in self.entities])
+
+    def _combine_data(self, components):
+        data = defaultdict(list)
+        names = []
+        for part in components:
+            names.append(part.pop('name', None))
+            names.extend(part.get('aliases', []))
+            for field, value in part.items():
+                if field in self.MULTI:
+                    data[field].extend(value)
+                else:
+                    data[field].append(value)
+
+        for field, values in data.items():
+            if field in self.MULTI:
+                data[field] = list(set(values))
+            else:
+                # TODO: or use ';'?
+                data[field] = Counter(values).most_common(1)[0][0]
+
+        names = [n for n in names if n is not None]
+        if len(names):
+            data['name'] = Levenshtein.setmedian(names)
+        return data
+
+    def __repr__(self):
+        return '<CompositeEntity(%r)>' % (self.entities,)
 
 
 class Entity(EntityCore, Base):
@@ -108,7 +156,7 @@ class Entity(EntityCore, Base):
 
         obj.tasked = parse_boolean(data.get('tasked'), default=False)
         obj.active = parse_boolean(data.get('active'), default=True)
-        obj.data = data
+        obj.data = obj.parse_data(data)
         session.add(obj)
         return obj
 
@@ -143,6 +191,32 @@ class Entity(EntityCore, Base):
             q = q.filter(cls.match_uid == match_uid)
         for entity in q:
             entity.delete()
+
+    @classmethod
+    def iter_composite(cls, origins=[], tasked=None):
+        sq = session.query(cls.canonical_uid.distinct())
+        sq = sq.filter(cls.project == project.name)
+        sq = sq.filter(cls.active == True)  # noqa
+        if len(origins):
+            sq = sq.filter(cls.origin.in_(origins))
+        if tasked is not None:
+            sq = sq.filter(cls.tasked == tasked)
+        q = session.query(cls)
+        q = q.filter(cls.project == project.name)
+        q = q.filter(cls.active == True)  # noqa
+        q = q.filter(cls.canonical_uid.in_(sq))
+        q = q.order_by(cls.canonical_uid.asc())
+        entities = []
+        canonical_uid = None
+        for entity in q:
+            if entity.canonical_uid != canonical_uid:
+                if len(entities):
+                    yield CompositeEntity(entities)
+                entities = []
+            entities.append(entity)
+            canonical_uid = entity.canonical_uid
+        if len(entities):
+            yield CompositeEntity(entities)
 
     def __repr__(self):
         return '<Entity(%r)>' % self.uid

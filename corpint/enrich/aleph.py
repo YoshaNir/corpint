@@ -161,8 +161,8 @@ def emit_entity(emitter, entity, links=True):
             if other_uid is None:
                 continue
             ldata = {
-                'source': other_uid if link['inverted'] else entity_uid,
-                'target': entity_uid if link['inverted'] else other_uid,
+                'source_uid': other_uid if link['inverted'] else entity_uid,
+                'target_uid': entity_uid if link['inverted'] else other_uid,
             }
             ldata.update(map_properties(link, LINK_PROPERTIES))
             ldata.pop('aliases')
@@ -182,24 +182,24 @@ def emit_entity(emitter, entity, links=True):
 
 
 def enrich(origin, entity):
-    if entity['type'] not in [PERSON, OTHER, ORGANIZATION, COMPANY]:
+    if entity.schema not in [PERSON, OTHER, ORGANIZATION, COMPANY]:
         return
 
     names = set()
-    for name in entity.get('names'):
+    for name in entity.names:
         term = search_term(name)
         if term is None:
             continue
-        if entity['type'] == PERSON:
+        if entity.schema == PERSON:
             term = term + '~2'
         names.add(term)
 
     query = ' OR '.join(names)
     for match in aleph_paged(ENTITIES_API, params={'q': query}):
-        match_uid = origin.uid(entity.get('id'))
+        match_uid = origin.uid(match.get('id'))
         if match_uid is None:
             continue
-        emitter = origin.result(entity.get('uid'), match_uid)
+        emitter = origin.result(entity.uid, match_uid)
         emit_entity(emitter, match)
 
 

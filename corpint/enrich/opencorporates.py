@@ -56,8 +56,8 @@ def emit_officer(emitter, officer, company_url=None, publisher=None):
     if company_url is not None:
         company_uid = emitter.uid(company_url)
         emitter.emit_link({
-            'source': company_uid,
-            'target': officer_uid,
+            'source_uid': company_uid,
+            'target_uid': officer_uid,
             'publisher': publisher,
             'summary': officer.get('position'),
             'start_date': officer.get('start_date'),
@@ -139,7 +139,7 @@ def search_officers(origin, entity):
     for page in count(1):
         # TODO aliases
         params = {
-            'q': entity.get('name'),
+            'q': entity.name,
             'page': page
         }
         results = get_oc_api(OFFICER_SEARCH_API, params=params)
@@ -148,8 +148,7 @@ def search_officers(origin, entity):
         for officer in results.get('officers'):
             officer = officer.get('officer')
             url = officer.get('opencorporates_url')
-            officer_uid = origin.uid(url)
-            emitter = origin.result(entity.get('uid'), officer_uid)
+            emitter = origin.result(entity.uid, origin.uid(url))
             emit_officer(emitter, officer)
         if page >= results.get('total_pages'):
             return
@@ -159,11 +158,11 @@ def search_companies(origin, entity):
     for page in count(1):
         # TODO aliases
         params = {
-            'q': entity.get('name'),
+            'q': entity.name,
             'page': page
         }
-        if entity.get('country'):
-            params['country_code'] = entity.get('country')
+        if entity.country:
+            params['country_code'] = entity.country
         results = get_oc_api(COMPANY_SEARCH_API, params=params)
         if results is None:
             break
@@ -171,15 +170,15 @@ def search_companies(origin, entity):
             company = company.get('company')
             url = company.get('opencorporates_url')
             company_uid = origin.uid(url)
-            emitter = origin.result(entity.get('uid'), company_uid)
+            emitter = origin.result(entity.uid, company_uid)
             get_company(emitter, url)
         if page >= results.get('total_pages'):
             return
 
 
 def enrich(origin, entity):
-    origin.log.info('Search OC: %s', entity.get('name'))
-    if entity['type'] in [OTHER, ORGANIZATION, COMPANY, PERSON]:
+    origin.log.info('Search OC [%s]: %s', entity.schema, entity.name)
+    if entity.schema in [OTHER, ORGANIZATION, COMPANY, PERSON]:
         search_officers(origin, entity)
-    if entity['type'] in [OTHER, ORGANIZATION, COMPANY]:
+    if entity.schema in [OTHER, ORGANIZATION, COMPANY]:
         search_companies(origin, entity)

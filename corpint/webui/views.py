@@ -6,9 +6,8 @@ from corpint.model.mapping import Mapping
 
 blueprint = Blueprint('base', __name__)
 
-SKIP_FIELDS = ['id', 'name', 'origin', 'uid', 'uid_canonical',
-               'source_url', 'opencorporates_url', 'aleph_id',
-               'match_uid', 'query_uid']
+SKIP_FIELDS = ['name', 'aliases', 'source_url', 'opencorporates_url',
+               'aleph_id']
 JUDGEMENTS = {
     'TRUE': True,
     'FALSE': False,

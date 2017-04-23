@@ -88,14 +88,14 @@ def page_entity(emitter, page, path=None):
 
 def enrich(origin, entity):
     # Assume entries on companies in Wikipedia are pretty useless.
-    if entity['type'] not in [PERSON, OTHER]:
+    if entity.schema not in [PERSON, OTHER]:
         return
 
     for lang, site in SITES.items():
         origin.log.info("Search [%s]: %s", lang, entity['name'])
-        for name in entity.get('names', []):
+        for name in entity.names:
             for res in site.search(name, what='nearmatch', limit=5):
                 page = site.Pages[res.get('title')]
                 match_uid = origin.uid(page.pagelanguage, page.name)
-                emitter = origin.result(entity.get('uid'), match_uid)
+                emitter = origin.result(entity.uid, match_uid)
                 page_entity(emitter, page)

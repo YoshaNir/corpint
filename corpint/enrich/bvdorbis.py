@@ -146,8 +146,8 @@ def link_items(emitter, entity, items, summary):
         if key == 'aliases':
             other['aliases'].add(value)
         elif key == 'type':
-            other[key] = TYPES.get(value)
-            if other[key] is None and value is not None:
+            other['schema'] = TYPES.get(value)
+            if other['schema'] is None and value is not None:
                 print 'UNKOWN TYPE', [value]
         else:
             other[key] = value
@@ -157,8 +157,8 @@ def link_items(emitter, entity, items, summary):
     other['name'] = other['name'].replace('via its funds', '')
     emitter.log.info("Associated [%(bvd_id)s]: %(name)s", other)
     emitter.emit_entity(other)
-    link['source'] = entity['uid']
-    link['target'] = other['uid']
+    link['source_uid'] = entity['uid']
+    link['target_uid'] = other['uid']
     emitter.emit_link(link)
 
 
@@ -169,7 +169,7 @@ def emit_company(emitter, client, session, data):
         'uid': emitter.uid(data.BvDID),
         'name': data.Name,
         'bvd_id': data.BvDID,
-        'type': 'Company',
+        'schema': 'Company',
         'country': data.Country,
         'phone': data.PhoneOrFax,
         'registration_number': data.NationalId,
@@ -211,8 +211,8 @@ def emit_company(emitter, client, session, data):
 
 
 def enrich(origin, entity):
-    if entity['type'] not in [OTHER, ORGANIZATION, COMPANY]:
-        origin.log.info('Orbis skip: %(name)s', entity)
+    if entity.schema not in [OTHER, ORGANIZATION, COMPANY]:
+        origin.log.info('Orbis skip: %s', entity.name)
         return
 
     if PASSWORD is None:
@@ -221,19 +221,18 @@ def enrich(origin, entity):
 
     client = zeep.Client(wsdl=WSDL)
     session = client.service.Open(USERNAME, PASSWORD)
-    origin.log.info('Session [%s]: %s', session, entity.get('name'))
+    origin.log.info('Session [%s]: %s', session, entity.name)
     try:
         # print client.service.GetReportSectionIds(session)
         # print client.service.GetAvailableModels(session)
 
         MatchCriteria = client.get_type('ns0:MatchCriteria')
-        ct = MatchCriteria(Name=entity.get('name'),
-                           Country=entity.get('country'))
+        ct = MatchCriteria(Name=entity.name, Country=entity.country)
         res = client.service.Match(session, ct, ['None'])
         if res is not None:
             for data in res:
                 match_uid = origin.uid(data.BvDID)
-                emitter = origin.result(entity.get('uid'), match_uid)
+                emitter = origin.result(entity.uid, match_uid)
                 emit_company(emitter, client, session, data)
     except TransportError as terr:
         origin.log.exception(terr)

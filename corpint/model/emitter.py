@@ -5,6 +5,7 @@ from normality import stringify
 from corpint.core import session, project
 from corpint.model.mapping import Mapping
 from corpint.model.entity import Entity
+from corpint.model.link import Link
 
 
 class Emitter(object):
@@ -37,20 +38,23 @@ class Emitter(object):
             uid.update(arg.encode('utf-8'))
         if not has_args:
             raise ValueError("No unique key given!")
-        return uid.hexdigest()
+        return unicode(uid.hexdigest())
 
     def emit_entity(self, data):
         """Create or update an entity in the context of this emitter."""
         if self.disabled:
             return
-        entity = Entity.save(data, self.origin,
+        entity = Entity.save(dict(data), self.origin,
                              query_uid=self.query_uid,
                              match_uid=self.match_uid)
-        if self.judgement is None and entity.uid == self.match_uid:
-            # Generate a tentative mapping.
-            query = Entity.get(self.query_uid)
-            Mapping.save(self.match_uid, self.query_uid,
-                         None, score=query.compare(entity))
+        session.commit()
+        return entity
+
+    def emit_link(self, data):
+        """Create or update a link in the context of this emitter."""
+        if self.disabled:
+            return
+        entity = Link.save(dict(data), self.origin)
         session.commit()
         return entity
 
@@ -60,6 +64,12 @@ class Emitter(object):
             return
         return project.emit_judgement(uida, uidb, judgement, decided=decided,
                                       score=score)
+
+    def entity_exists(self, uid):
+        """Check if the given entity exists in this context."""
+        entity = Entity.get(uid, query_uid=self.query_uid,
+                            match_uid=self.match_uid)
+        return entity is not None
 
     def clear(self):
         Entity.delete_by_origin(self.origin,
@@ -86,7 +96,7 @@ class ResultEmitter(Emitter):
     """Generate entities inside a result context."""
 
     def __init__(self, origin, query_uid, match_uid):
-        super(OriginEmitter, self).__init__(origin.origin,
+        super(ResultEmitter, self).__init__(origin.origin,
                                             query_uid=query_uid,
                                             match_uid=match_uid)
 
@@ -94,8 +104,14 @@ class ResultEmitter(Emitter):
         # Enrichment results are first held as inactive and become active only
         # once the judgement between the query and result entities is confirmed
         data['active'] = False
-        return super(ResultEmitter, self).emit_entity(data)
-        # TODO: generate score / mapping candidate
+        entity = super(ResultEmitter, self).emit_entity(data)
+        if self.judgement is None and entity.uid == self.match_uid:
+            # Generate a tentative mapping.
+            query = Entity.get(self.query_uid)
+            Mapping.save(self.match_uid, self.query_uid,
+                         None, score=query.compare(entity))
+        session.commit()
+        return entity
 
     def __repr__(self):
         return '<ResultEmitter(%r, %r, %r)>' % (self.origin,

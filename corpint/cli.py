@@ -1,13 +1,15 @@
 import click
 from pprint import pprint  # noqa
 from dalet import parse_boolean
+from collections import defaultdict
+from itertools import combinations
 from unicodecsv import DictReader, DictWriter
 
-# from corpint import project as make_project
 from corpint.core import config, project
 from corpint.model import Mapping, Entity
 from corpint.webui import run_webui
 from corpint.export import export_to_neo4j
+from corpint.enrich import get_enrichers
 
 
 @click.group()
@@ -15,6 +17,7 @@ from corpint.export import export_to_neo4j
 @click.option('database_uri', '--db', envvar='DATABASE_URI')
 @click.option('name', '--project', envvar='CORPINT_PROJECT')
 def cli(debug, database_uri, name):
+    """An investigative graph data assembly toolkit."""
     config.debug = debug
     config.database_uri = database_uri
     config.project_name = name
@@ -76,8 +79,28 @@ def mappings_import(file):
                                score=score, decided=True)
 
 
+@mappings.command('crunch')
+@click.pass_context
+@click.option('origins', '--origin', '-o', multiple=True)
+def mappings_crunch(ctx, origins):
+    """Merge all entities with similar names (bad idea)."""
+    inverted = defaultdict(set)
+    for entity in Entity.find_by_origins(origins):
+        for fp in entity.fingerprints:
+            inverted[entity.uid] = fp
+
+    for name, uids in inverted.items():
+        if len(uids) == 1:
+            continue
+
+        project.log.info("Merge: %s (%d matches)", name, len(uids))
+        for (left, right) in combinations(uids, 2):
+            project.emit_judgement(left, right, True)
+
+
 @cli.command()
 def webui():
+    """Record linkage web interface."""
     run_webui()
 
 
@@ -85,35 +108,35 @@ def webui():
 @click.option('origins', '--origin', '-o', multiple=True)
 @click.argument('enricher')
 def enrich(origins, enricher):
-    project.enrich(enricher, origins=origins)
-
-
-# @cli.command()
-# @click.pass_context
-# @click.option('origins', '--origin', '-o', multiple=True)
-# def namemerge(ctx, origins):
-#     name_merge(ctx.obj['PROJECT'], origins)
+    """Cross-reference against external APIs."""
+    enrich_func = get_enrichers().get(enricher)
+    if enrich_func is None:
+        raise RuntimeError("Enricher not found: %s" % enricher)
+    emitter = project.origin(enricher)
+    Mapping.canonicalize()
+    for entity in Entity.iter_composite(origins=origins, tasked=True):
+        enrich_func(emitter, entity)
 
 
 @cli.command()
 @click.argument('origin')
 def clear(origin):
     """Delete all the data from an origin."""
-    origin = ctx.obj['PROJECT'].origin(origin)
-    origin.clear()
+    project.origin(origin).clear()
 
 
-@cli.command()
-def searches():
-    for entity in ctx.obj['PROJECT'].iter_searches():
-        pprint(entity)
+@cli.group()
+def export():
+    """Export the generated graph elsewhere."""
 
 
-@cli.command()
-@click.option('neo4j_uri', '--url', '-u')
+@export.command('neo4j')
+@click.option('neo4j_uri', '--url', '-u', default=None)
 def export_neo4j(neo4j_uri):
-    export_to_neo4j(neo4j_uri)
-
+    """Load the graph to Neo4J for navigation."""
+    if neo4j_uri is not None:
+        config.neo4j_uri = neo4j_uri
+    export_to_neo4j()
 
 
 def main():

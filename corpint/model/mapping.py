@@ -3,6 +3,7 @@ from sqlalchemy import Column, Unicode, Boolean, Float
 
 from corpint.core import session, project
 from corpint.model.entity import Entity
+from corpint.model.link import Link
 from corpint.model.common import Base, UID_LENGTH
 
 
@@ -143,7 +144,8 @@ class Mapping(Base):
     @classmethod
     def generate_scored_mappings(cls, origins=[], threshold=.5):
         """Do a cross-product comparison of entities and generate mappings."""
-        entities = Entity.find_by_origins(origins).all()
+        q = Entity.find_by_origins(origins)
+        entities = q.filter(Entity.active == True).all()  # noqa
         decided = cls.get_decided()
         project.log.info("Loaded: %s entities, %s decisions.",
                          len(entities), len(decided))
@@ -179,6 +181,14 @@ class Mapping(Base):
         q = q.filter(Entity.project == project.name)
         q.update({Entity.canonical_uid: Entity.uid},
                  synchronize_session='fetch')
+
+        q = session.query(Link)
+        q = q.filter(Link.project == project.name)
+        q.update({Link.source_canonical_uid: Link.source_uid},
+                 synchronize_session='fetch')
+        q.update({Link.target_canonical_uid: Link.target_uid},
+                 synchronize_session='fetch')
+
         clusters = cls.generate_clusters()
         project.log.info("Canonicalize: %d clusters", len(clusters))
         for uids in clusters:
@@ -187,6 +197,17 @@ class Mapping(Base):
             q = q.filter(Entity.project == project.name)
             q = q.filter(Entity.uid.in_(uids))
             q.update({Entity.canonical_uid: canonical_uid},
+                     synchronize_session='fetch')
+
+            q = session.query(Link)
+            q = q.filter(Link.project == project.name)
+            q = q.filter(Link.source_uid.in_(uids))
+            q.update({Link.source_canonical_uid: canonical_uid},
+                     synchronize_session='fetch')
+            q = session.query(Link)
+            q = q.filter(Link.project == project.name)
+            q = q.filter(Link.target_uid.in_(uids))
+            q.update({Link.target_canonical_uid: canonical_uid},
                      synchronize_session='fetch')
 
     @classmethod
