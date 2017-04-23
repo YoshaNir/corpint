@@ -87,7 +87,7 @@ def mappings_crunch(ctx, origins):
     inverted = defaultdict(set)
     for entity in Entity.find_by_origins(origins):
         for fp in entity.fingerprints:
-            inverted[entity.uid] = fp
+            inverted[fp].add(entity.uid)
 
     for name, uids in inverted.items():
         if len(uids) == 1:
