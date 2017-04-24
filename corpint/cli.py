@@ -104,7 +104,7 @@ def webui():
     run_webui()
 
 
-@cli.command()
+@cli.command('enrich')
 @click.option('origins', '--origin', '-o', multiple=True)
 @click.argument('enricher')
 def enrich(origins, enricher):

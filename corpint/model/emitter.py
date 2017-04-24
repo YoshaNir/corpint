@@ -6,6 +6,7 @@ from corpint.core import session, project
 from corpint.model.mapping import Mapping
 from corpint.model.entity import Entity
 from corpint.model.link import Link
+from corpint.model.document import Document
 
 
 class Emitter(object):
@@ -57,6 +58,15 @@ class Emitter(object):
         entity = Link.save(dict(data), self.origin)
         session.commit()
         return entity
+
+    def emit_document(self, entity_uid, url, title, publisher=None):
+        """Create or update a document in the context of this emitter."""
+        if self.disabled:
+            return
+        doc = Document.save(entity_uid, url, title, self.origin,
+                            publisher=publisher)
+        session.commit()
+        return doc
 
     def emit_judgement(self, uida, uidb, judgement, score=None, decided=False):
         """Change the record linkage status of two entities."""

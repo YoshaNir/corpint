@@ -5,6 +5,8 @@ from corpint.model.project import Project  # noqa
 from corpint.model.entity import Entity  # noqa
 from corpint.model.link import Link  # noqa
 from corpint.model.mapping import Mapping  # noqa
+from corpint.model.address import Address  # noqa
+from corpint.model.document import Document  # noqa
 from corpint.model.common import Base
 
 log = logging.getLogger(__name__)

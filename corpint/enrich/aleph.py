@@ -8,6 +8,7 @@ from urlparse import urljoin
 from itertools import count
 
 from corpint.schema import COMPANY, ORGANIZATION, PERSON, ASSET, OTHER
+from corpint.model import Document
 
 log = logging.getLogger(__name__)
 
@@ -215,38 +216,24 @@ def search_documents(query):
 
 
 def enrich_documents(origin, entity):
-    for uid in entity['uid_parts']:
-        origin.project.documents.delete(uid=uid)
+    for uid in entity.uids:
+        Document.delete_by_entity(entity.uid)
 
-    if entity['type'] != ASSET:
-        names = set()
-        for name in entity.get('names'):
-            term = search_term(name)
-            if term is None:
-                continue
-            if entity['type'] == PERSON:
-                term = term + '~2'
-            names.add(term)
+    if entity.schema not in [PERSON, COMPANY, ORGANIZATION, OTHER]:
+        return
 
-        names = ' OR '.join(names)
-        total = 0
-        for url, title, publisher in search_documents(names):
-            for uid in entity['uid_parts']:
-                origin.emit_document(url, title, uid=uid, query=names,
-                                     publisher=publisher)
-            total += 1
-        origin.log.info('Query [%s]: %s -> %s',
-                        total, entity.get('name'), names)
-
-    for address in entity['address']:
-        total = 0
-        origin.project.documents.delete(query=address)
-        term = search_term(address)
+    names = set()
+    for name in entity.names:
+        term = search_term(name)
         if term is None:
             continue
-        term = term + '~3'
-        for url, title, publisher in search_documents(term):
-            origin.emit_document(url, title, query=address,
-                                 publisher=publisher)
-            total += 1
-        origin.log.info('Query [%s]: %s', total, address)
+        if entity.schema == PERSON:
+            term = term + '~2'
+        names.add(term)
+
+    names = ' OR '.join(names)
+    total = 0
+    for url, title, publisher in search_documents(names):
+        origin.emit_document(entity.uid, url, title, publisher=publisher)
+        total += 1
+    origin.log.info('Query [%s]: %s -> %s', entity.name, names, total)

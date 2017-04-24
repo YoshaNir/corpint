@@ -146,6 +146,8 @@ class Mapping(Base):
         """Do a cross-product comparison of entities and generate mappings."""
         q = Entity.find_by_origins(origins)
         entities = q.filter(Entity.active == True).all()  # noqa
+        # import random
+        # random.shuffle(entities)
         decided = cls.get_decided()
         project.log.info("Loaded: %s entities, %s decisions.",
                          len(entities), len(decided))

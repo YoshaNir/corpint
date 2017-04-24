@@ -10,6 +10,7 @@ from corpint.core import session, project
 from corpint.model.common import Base, SchemaObject, UID_LENGTH
 from corpint.model.schema import choose_best_schema
 from corpint.model.schema import TYPES, ASSET, PERSON
+from corpint.model.address import Address
 
 IDENTIFIERS = ['aleph_id', 'opencorporates_url', 'bvd_id', 'wikidata_id']
 
@@ -154,10 +155,13 @@ class Entity(EntityCore, Base):
         if obj.schema not in TYPES:
             raise ValueError("Invalid entity type: %r", data)
 
-        obj.tasked = parse_boolean(data.get('tasked'), default=False)
-        obj.active = parse_boolean(data.get('active'), default=True)
+        obj.tasked = parse_boolean(data.pop('tasked', None), default=False)
+        obj.active = parse_boolean(data.pop('active', None), default=True)
         obj.data = obj.parse_data(data)
         session.add(obj)
+
+        Address.delete_by_entity(uid)
+        Address.save(uid, obj.data.get('address'), origin)
         return obj
 
     @classmethod

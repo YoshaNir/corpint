@@ -1,7 +1,10 @@
 from py2neo import Graph, Node, Relationship
 
 from corpint.core import project, config
-from corpint.model import Entity, Link, Mapping
+from corpint.model import Entity, Link, Mapping, Address, Document
+
+ADDRESS = 'Address'
+DOCUMENT = 'Document'
 
 
 def clear_leaf_nodes(graph, label):
@@ -74,6 +77,56 @@ def load_mappings(graph, entities):
         raise
 
 
+def load_addresses(graph, entities):
+    """Load addresses, geocoded or otherwise."""
+    tx = graph.begin()
+    project.log.info("Loading %s addresses...", Address.find().count())
+    addresses = {}
+    try:
+        for address in Address.find():
+            entity = entities.get(address.entity_uid)
+            if entity is None:
+                continue
+            slug = address.display_slug
+            if slug not in addresses:
+                node = Node(ADDRESS, name=address.display_label, slug=slug)
+                tx.create(node)
+                addresses[slug] = node
+            rel = Relationship(entity, 'LOCATED_AT', addresses[slug])
+            tx.create(rel)
+        clear_leaf_nodes(graph, ADDRESS)
+        tx.commit()
+    except Exception:
+        tx.rollback()
+        raise
+
+
+def load_documents(graph, entities):
+    """Load documents that mention multiple entities."""
+    tx = graph.begin()
+    project.log.info("Loading %s documents...", Document.find().count())
+    documents = {}
+    try:
+        for document in Document.find():
+            entity = entities.get(document.entity_uid)
+            if entity is None:
+                continue
+            if document.uid not in documents:
+                node = Node(DOCUMENT,
+                            name=document.title,
+                            url=document.url,
+                            uid=document.uid)
+                tx.create(node)
+                documents[document.uid] = node
+            rel = Relationship(entity, 'MENTIONS', documents[document.uid])
+            tx.create(rel)
+        clear_leaf_nodes(graph, DOCUMENT)
+        tx.commit()
+    except Exception:
+        tx.rollback()
+        raise
+
+
 def export_to_neo4j():
     if config.neo4j_uri is None:
         project.log.error("No $NEO4J_URI set, cannot load graph.")
@@ -87,7 +140,5 @@ def export_to_neo4j():
     entities = load_entities(graph)
     load_links(graph, entities)
     load_mappings(graph, entities)
-
-    # clear_leaf_nodes(graph, 'Name')
-    # clear_leaf_nodes(graph, 'Address')
-    # clear_leaf_nodes(graph, 'Document')
+    load_addresses(graph, entities)
+    load_documents(graph, entities)

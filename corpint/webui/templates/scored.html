@@ -33,10 +33,10 @@
               <input type="radio" name="{{candidate.key}}" value="TRUE" />
             </td>
             <td width="1%" rowspan="{{candidate.height}}">
-              <input type="radio" name="{{candidate.key}}" value="FALSE" />
+              <input type="radio" name="{{candidate.key}}" value="FALSE" checked="checked" />
             </td>
             <td width="1%" rowspan="{{candidate.height}}">
-              <input type="radio" name="{{candidate.key}}" value="NULL" checked="checked" />
+              <input type="radio" name="{{candidate.key}}" value="NULL" />
             </td>
           </tr>
           {% for field in candidate.fields %}
