@@ -84,11 +84,18 @@ class CompositeEntity(EntityCore):
         self.entities = tuple(entities)
         self.active = True
         self.uids = [e.uid for e in self.entities]
-        self.origins = set([e.origin for e in self.entities])
         self.uid = max([e.canonical_uid for e in self.entities])
         self.tasked = max([e.tasked for e in self.entities])
         self.schema = choose_best_schema([e.schema for e in self.entities])
         self.data = self._combine_data([e.data for e in self.entities])
+
+    @property
+    def origins(self):
+        return set([e.origin for e in self.entities])
+
+    @property
+    def origin(self):
+        return ', '.join(sorted(self.origins))
 
     def _combine_data(self, components):
         data = defaultdict(list)
@@ -151,6 +158,7 @@ class Entity(EntityCore, Base):
             obj.canonical_uid = uid
             obj.query_uid = query_uid
             obj.match_uid = match_uid
+
         obj.origin = origin
         obj.schema = data.pop('schema', None)
         if obj.schema not in TYPES:

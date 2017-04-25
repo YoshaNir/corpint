@@ -20,12 +20,6 @@ class Emitter(object):
         self.log = logging.getLogger('%s.%s' % (project.name, self.origin))
         self.query_uid = query_uid
         self.match_uid = match_uid
-        self.judgement = False
-        self.disabled = False
-
-        if query_uid and match_uid:
-            self.judgement = Mapping.get_judgement(query_uid, match_uid)
-            self.disabled = self.judgement is False
 
     def uid(self, *args):
         """Generate a unique identifier for an entity."""
@@ -43,8 +37,6 @@ class Emitter(object):
 
     def emit_entity(self, data):
         """Create or update an entity in the context of this emitter."""
-        if self.disabled:
-            return
         entity = Entity.save(dict(data), self.origin,
                              query_uid=self.query_uid,
                              match_uid=self.match_uid)
@@ -53,16 +45,12 @@ class Emitter(object):
 
     def emit_link(self, data):
         """Create or update a link in the context of this emitter."""
-        if self.disabled:
-            return
         entity = Link.save(dict(data), self.origin)
         session.commit()
         return entity
 
     def emit_document(self, entity_uid, url, title, publisher=None):
         """Create or update a document in the context of this emitter."""
-        if self.disabled:
-            return
         doc = Document.save(entity_uid, url, title, self.origin,
                             publisher=publisher)
         session.commit()
@@ -70,8 +58,6 @@ class Emitter(object):
 
     def emit_judgement(self, uida, uidb, judgement, score=None, decided=False):
         """Change the record linkage status of two entities."""
-        if self.disabled:
-            return
         return project.emit_judgement(uida, uidb, judgement, decided=decided,
                                       score=score)
 
@@ -96,7 +82,8 @@ class OriginEmitter(Emitter):
 
     def result(self, query_uid, match_uid):
         """Create an emitter for a specific result."""
-        return ResultEmitter(self, query_uid, match_uid)
+        return ResultEmitter(self.origin, query_uid=query_uid,
+                             match_uid=match_uid)
 
     def __repr__(self):
         return '<OriginEmitter(%r)>' % (self.origin)
@@ -106,22 +93,40 @@ class ResultEmitter(Emitter):
     """Generate entities inside a result context."""
 
     def __init__(self, origin, query_uid, match_uid):
-        super(ResultEmitter, self).__init__(origin.origin,
+        self.judgement = Mapping.get_judgement(query_uid, match_uid)
+        super(ResultEmitter, self).__init__(origin,
                                             query_uid=query_uid,
                                             match_uid=match_uid)
 
     def emit_entity(self, data):
+        if self.judgement is False:
+            return
         # Enrichment results are first held as inactive and become active only
         # once the judgement between the query and result entities is confirmed
-        data['active'] = False
+
         entity = super(ResultEmitter, self).emit_entity(data)
-        if self.judgement is None and entity.uid == self.match_uid:
-            # Generate a tentative mapping.
-            query = Entity.get(self.query_uid)
-            Mapping.save(self.match_uid, self.query_uid,
-                         None, score=query.compare(entity))
+        if self.judgement is None:
+            entity.active = False
+            if entity.uid == self.match_uid:
+                # Generate a tentative mapping.
+                query = Entity.get(self.query_uid)
+                Mapping.save(self.match_uid, self.query_uid, None,
+                             score=query.compare(entity))
         session.commit()
         return entity
+
+    def emit_link(self, data):
+        """Create or update a link in the context of this emitter."""
+        if self.judgement is False:
+            return
+        return super(ResultEmitter, self).emit_link(data)
+
+    def emit_document(self, entity_uid, url, title, publisher=None):
+        """Create or update a document in the context of this emitter."""
+        if self.judgement is False:
+            return
+        return super(ResultEmitter, self).emit_document(entity_uid, url, title,
+                                                        publisher=publisher)
 
     def __repr__(self):
         return '<ResultEmitter(%r, %r, %r)>' % (self.origin,

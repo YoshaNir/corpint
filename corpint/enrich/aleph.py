@@ -7,6 +7,7 @@ from pprint import pprint  # noqa
 from urlparse import urljoin
 from itertools import count
 
+from corpint.core import session
 from corpint.schema import COMPANY, ORGANIZATION, PERSON, ASSET, OTHER
 from corpint.model import Document
 
@@ -68,7 +69,29 @@ def search_term(term):
             term = term[len(stopword):]
     if len(term) < 4:
         return
-    return '"%s"' % term
+    return term
+
+
+def search_entity(entity):
+    names = set()
+    for name in entity.names:
+        name = search_term(name)
+        if name is not None:
+            names.add(name)
+
+    terms = set(names)
+    for name in names:
+        for other in names:
+            if other != name and other in name and name in terms:
+                terms.remove(name)
+
+    searches = []
+    for term in terms:
+        search = '"%s"' % term
+        if entity.schema == PERSON:
+            search = search + '~2'
+        searches.append(search)
+    return ' OR '.join(searches)
 
 
 def collection_label(id):
@@ -218,22 +241,14 @@ def search_documents(query):
 def enrich_documents(origin, entity):
     for uid in entity.uids:
         Document.delete_by_entity(entity.uid)
+    session.commit()
 
     if entity.schema not in [PERSON, COMPANY, ORGANIZATION, OTHER]:
         return
 
-    names = set()
-    for name in entity.names:
-        term = search_term(name)
-        if term is None:
-            continue
-        if entity.schema == PERSON:
-            term = term + '~2'
-        names.add(term)
-
-    names = ' OR '.join(names)
     total = 0
-    for url, title, publisher in search_documents(names):
+    query = search_entity(entity)
+    for url, title, publisher in search_documents(query):
         origin.emit_document(entity.uid, url, title, publisher=publisher)
         total += 1
-    origin.log.info('Query [%s]: %s -> %s', entity.name, names, total)
+    origin.log.info('Query [%s]: %s -> %s', entity.name, query, total)

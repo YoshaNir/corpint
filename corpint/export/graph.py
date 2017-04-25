@@ -25,7 +25,7 @@ def load_entities(graph):
             label = entity.schema or 'Other'
             data = dict(entity.data)
             data.pop('aliases', None)
-            node = Node(label, **data)
+            node = Node(label, origin=entity.origin, **data)
             project.log.info("Node [%s]: %s", label, entity.name)
             tx.create(node)
             for uid in entity.uids:
@@ -88,6 +88,8 @@ def load_addresses(graph, entities):
             if entity is None:
                 continue
             slug = address.display_slug
+            if slug is None:
+                continue
             if slug not in addresses:
                 node = Node(ADDRESS, name=address.display_label, slug=slug)
                 tx.create(node)

@@ -47,24 +47,24 @@ class Mapping(Base):
         obj.judgement = judgement
         if judgement is not None:
             decided = True
-        obj.generated = generated
+        obj.generated = generated or obj.generated
         obj.decided = decided or obj.decided
         if score is not None:
-            score = float(score)
-        obj.score = score
+            obj.score = float(score)
         session.add(obj)
 
-        entities = chain(
-            Entity.find_by_result(left_uid, right_uid),
-            Entity.find_by_result(right_uid, left_uid)
-        )
-        for entity in entities:
-            if judgement is False:
-                # Clear out rejected results.
-                entity.delete()
-            else:
-                # Set entities to enabled.
-                entity.active = True
+        if obj.decided:
+            entities = chain(
+                Entity.find_by_result(left_uid, right_uid),
+                Entity.find_by_result(right_uid, left_uid)
+            )
+            for entity in entities:
+                if judgement is False:
+                    # Clear out rejected results.
+                    entity.delete()
+                else:
+                    # Set entities to enabled.
+                    entity.active = True
         return obj
 
     @classmethod

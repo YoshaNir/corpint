@@ -88,10 +88,10 @@ def emit_company(emitter, company):
         'uid': company_uid,
         'name': company.get('name'),
         'aliases': aliases,
-        'type': 'Company',
+        'schema': 'Company',
         'publisher': publisher,
         'registration_number': company.get('company_number'),
-        'country': company.get('jurisdiction_code')[:2],
+        'country': company.get('jurisdiction_code')[:2].upper(),
         'legal_form': company.get('company_type'),
         'status': company.get('current_status'),
         'dissolution_date': company.get('dissolution_date'),
@@ -162,7 +162,7 @@ def search_companies(origin, entity):
             'page': page
         }
         if entity.country:
-            params['country_code'] = entity.country
+            params['country_code'] = entity.country.lower()
         results = get_oc_api(COMPANY_SEARCH_API, params=params)
         if results is None:
             break
