@@ -113,8 +113,10 @@ class CompositeEntity(EntityCore):
             if field in self.MULTI:
                 data[field] = list(set(values))
             else:
-                # TODO: or use ';'?
-                data[field] = Counter(values).most_common(1)[0][0]
+                if field in ['summary']:
+                    data[field] = '; '.join(values)
+                else:
+                    data[field] = Counter(values).most_common(1)[0][0]
 
         names = [n for n in names if n is not None]
         if len(names):

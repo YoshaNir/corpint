@@ -1,5 +1,4 @@
-from tempfile import mkdtemp
-from whoosh.index import create_in
+from whoosh.filedb.filestore import RamStorage
 from whoosh.qparser import QueryParser
 from whoosh.query import Term
 from whoosh.fields import Schema, TEXT, ID, KEYWORD
@@ -14,9 +13,8 @@ schema = Schema(uid=ID(stored=True), fingerprint=TEXT,
 class EntityIndex(object):
 
     def __init__(self):
-        self.index_dir = mkdtemp()
-        self.index = create_in(self.index_dir, schema=schema,
-                               indexname=project.name)
+        storage = RamStorage()
+        self.index = storage.create_index(schema)
 
     def build(self):
         project.log.info("Building entity search index...")
