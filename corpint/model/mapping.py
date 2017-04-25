@@ -1,9 +1,10 @@
-from itertools import chain, combinations
+from itertools import chain
 from sqlalchemy import Column, Unicode, Boolean, Float
 
 from corpint.core import session, project
 from corpint.model.entity import Entity
 from corpint.model.link import Link
+from corpint.model.index import EntityIndex
 from corpint.model.common import Base, UID_LENGTH
 
 
@@ -144,28 +145,32 @@ class Mapping(Base):
     @classmethod
     def generate_scored_mappings(cls, origins=[], threshold=.5):
         """Do a cross-product comparison of entities and generate mappings."""
-        q = Entity.find_by_origins(origins)
-        entities = q.filter(Entity.active == True).all()  # noqa
-        # import random
-        # random.shuffle(entities)
+        index = EntityIndex()
+        index.build()
+        q = Entity.find_by_origins(origins=[])
+        q = q.filter(Entity.active == True)  # noqa
+        entities = {e.uid: e for e in q.all()}
         decided = cls.get_decided()
-        project.log.info("Loaded: %s entities, %s decisions.",
-                         len(entities), len(decided))
-
-        for (left, right) in combinations(entities, 2):
-            if cls.sort_uids(left.uid, right.uid) in decided:
+        for entity in entities.values():
+            if len(origins) and entity.origin not in origins:
                 continue
+            skip = set()
+            for pair in decided:
+                if entity.uid in pair:
+                    skip.update(pair)
 
-            score = left.compare(right)
-            if score <= threshold:
-                continue
+            for uid in index.search_similar(entity, skip=skip):
+                match = entities.get(uid)
+                score = entity.compare(match)
+                if score <= threshold:
+                    continue
 
-            judgement = True if score > 1.0 else None
-            project.log.info("Candidate [%.3f]: %s <-> %s",
-                             score, left.name, right.name)
-            cls.save(left.uid, right.uid, judgement,
-                     score=score, generated=True)
-            session.commit()
+                project.log.info("Candidate [%.3f]: %s <-> %s",
+                                 score, entity.name, match.name)
+                cls.save(entity.uid, match.uid, judgement=None,
+                         score=score, generated=True)
+                decided.add((entity.uid, match.uid))
+                session.commit()
 
     @classmethod
     def cleanup(cls):

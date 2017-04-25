@@ -84,6 +84,7 @@ class CompositeEntity(EntityCore):
         self.entities = tuple(entities)
         self.active = True
         self.uids = [e.uid for e in self.entities]
+        self.origins = set([e.origin for e in self.entities])
         self.uid = max([e.canonical_uid for e in self.entities])
         self.tasked = max([e.tasked for e in self.entities])
         self.schema = choose_best_schema([e.schema for e in self.entities])

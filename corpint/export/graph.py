@@ -94,7 +94,7 @@ def load_addresses(graph, entities):
                 addresses[slug] = node
             rel = Relationship(entity, 'LOCATED_AT', addresses[slug])
             tx.create(rel)
-        clear_leaf_nodes(graph, ADDRESS)
+        clear_leaf_nodes(tx, ADDRESS)
         tx.commit()
     except Exception:
         tx.rollback()
@@ -120,7 +120,7 @@ def load_documents(graph, entities):
                 documents[document.uid] = node
             rel = Relationship(entity, 'MENTIONS', documents[document.uid])
             tx.create(rel)
-        clear_leaf_nodes(graph, DOCUMENT)
+        clear_leaf_nodes(tx, DOCUMENT)
         tx.commit()
     except Exception:
         tx.rollback()

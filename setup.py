@@ -28,6 +28,7 @@ setup(
         'fingerprints',
         'unicodecsv',
         'lxml',
+        'whoosh',  # search based de-dupe
         'googlemaps',
         'python-Levenshtein',
         'mwclient',  # wikipedia
