@@ -1,0 +1,28 @@
+{% extends "layout.html" %}
+{% import 'macros.html' as macros with context %}
+
+{% block title %}Scored{% endblock %}
+
+{% block body %}
+
+<form method="POST">
+  <table class="table table-bordered table-hover">
+    {{ macros.render_header() }}
+    {% if candidates|length %}
+      {% for mapping in candidates %}
+        {{ macros.render_mapping(mapping, entity=entity) }}
+      {% endfor %}
+    {% else %}
+      <tr>
+        <td colspan="6">No matches to approve</td>
+      </tr>
+    {% endif %}
+  </table>
+
+  <hr/>
+  <button class="btn btn-lg btn-primary" type="submit">
+    Save
+  </button>
+</form>
+
+{% endblock %}

@@ -110,8 +110,8 @@ def crawl_entity(emitter, cid, recurse=True):
                         value = val
             ouid = crawl_entity(emitter, value.get('value'), recurse=False)
             emitter.emit_link({
-                'source': uid,
-                'target': ouid,
+                'source_uid': uid,
+                'target_uid': ouid,
                 'summary': LINKS.get(prop)
             })
 
@@ -127,7 +127,7 @@ def crawl_entity(emitter, cid, recurse=True):
 def enrich(origin, entity):
     # print entity
     for lang in SITES.keys():
-        name = entity.get('wikipedia_%s' % lang)
+        name = entity.data.get('wikipedia_%s' % lang)
         if name is None:
             continue
         slug = quote(name.encode('utf-8'))
@@ -136,7 +136,6 @@ def enrich(origin, entity):
         for result in run_sparql(query):
             cid = result.get('item').get('value')
             origin.log.info("Wikidata ID [%s]: %s", cid, entity.get('name'))
-            match_uid = origin.uid(cid)
-            emitter = origin.result(entity.get('uid'), match_uid)
+            emitter = origin.result(entity.uid, origin.uid(cid))
             uid = crawl_entity(emitter, cid)
-            origin.emit_judgement(uid, entity['uid'], True, decided=True)
+            origin.emit_judgement(uid, entity.uid, True, decided=True)

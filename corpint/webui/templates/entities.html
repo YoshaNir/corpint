@@ -1,0 +1,42 @@
+{% extends "layout.html" %}
+
+{% block title %}All entities{% endblock %}
+
+{% block body %}
+  <table class="table table-condensed">
+    <tr>
+      <th>Origin</th>
+      <th>Name</th>
+      <th>Country</th>
+      <th width="30%">Address</th>
+    </tr>
+    {% for entity in entities %}
+      <tr>
+        <td><code>{{entity.origin}}</code></td>
+        <td>
+          <a href="{{url_for('base.entity', uid=entity.uid)}}">
+            {{entity.name or '[unnamed]'}}
+          </a>
+        </td>
+        <td>{{entity.country or '-'}}</td>
+        <td>{{entity.data.get('address', '')}}</td>
+      </tr>
+    {% endfor %}
+  </table>
+  <ul class="pager">
+    {% if has_prev %}
+      <li class="previous">
+        <a href="{{url_for('base.entities', q=text_query, offset=prev)}}">
+          &larr; Previous
+        </a>
+      </li>
+    {% endif %}
+    {% if has_next %}
+      <li class="next">
+        <a href="{{url_for('base.entities', q=text_query, offset=next)}}">
+          Next &rarr;
+        </a>
+      </li>
+    {% endif %}
+  </ul>
+{% endblock %}

@@ -7,7 +7,9 @@ from pprint import pprint  # noqa
 from urlparse import urljoin
 from itertools import count
 
+from corpint.core import session
 from corpint.schema import COMPANY, ORGANIZATION, PERSON, ASSET, OTHER
+from corpint.model import Document
 
 log = logging.getLogger(__name__)
 
@@ -67,7 +69,29 @@ def search_term(term):
             term = term[len(stopword):]
     if len(term) < 4:
         return
-    return '"%s"' % term
+    return term
+
+
+def search_entity(entity):
+    names = set()
+    for name in entity.names:
+        name = search_term(name)
+        if name is not None:
+            names.add(name)
+
+    terms = set(names)
+    for name in names:
+        for other in names:
+            if other != name and other in name and name in terms:
+                terms.remove(name)
+
+    searches = []
+    for term in terms:
+        search = '"%s"' % term
+        if entity.schema == PERSON:
+            search = search + '~2'
+        searches.append(search)
+    return ' OR '.join(searches)
 
 
 def collection_label(id):
@@ -161,8 +185,8 @@ def emit_entity(emitter, entity, links=True):
             if other_uid is None:
                 continue
             ldata = {
-                'source': other_uid if link['inverted'] else entity_uid,
-                'target': entity_uid if link['inverted'] else other_uid,
+                'source_uid': other_uid if link['inverted'] else entity_uid,
+                'target_uid': entity_uid if link['inverted'] else other_uid,
             }
             ldata.update(map_properties(link, LINK_PROPERTIES))
             ldata.pop('aliases')
@@ -182,24 +206,24 @@ def emit_entity(emitter, entity, links=True):
 
 
 def enrich(origin, entity):
-    if entity['type'] not in [PERSON, OTHER, ORGANIZATION, COMPANY]:
+    if entity.schema not in [PERSON, OTHER, ORGANIZATION, COMPANY]:
         return
 
     names = set()
-    for name in entity.get('names'):
+    for name in entity.names:
         term = search_term(name)
         if term is None:
             continue
-        if entity['type'] == PERSON:
+        if entity.schema == PERSON:
             term = term + '~2'
         names.add(term)
 
     query = ' OR '.join(names)
     for match in aleph_paged(ENTITIES_API, params={'q': query}):
-        match_uid = origin.uid(entity.get('id'))
+        match_uid = origin.uid(match.get('id'))
         if match_uid is None:
             continue
-        emitter = origin.result(entity.get('uid'), match_uid)
+        emitter = origin.result(entity.uid, match_uid)
         emit_entity(emitter, match)
 
 
@@ -215,38 +239,16 @@ def search_documents(query):
 
 
 def enrich_documents(origin, entity):
-    for uid in entity['uid_parts']:
-        origin.project.documents.delete(uid=uid)
+    for uid in entity.uids:
+        Document.delete_by_entity(entity.uid)
+    session.commit()
 
-    if entity['type'] != ASSET:
-        names = set()
-        for name in entity.get('names'):
-            term = search_term(name)
-            if term is None:
-                continue
-            if entity['type'] == PERSON:
-                term = term + '~2'
-            names.add(term)
+    if entity.schema not in [PERSON, COMPANY, ORGANIZATION, OTHER]:
+        return
 
-        names = ' OR '.join(names)
-        total = 0
-        for url, title, publisher in search_documents(names):
-            for uid in entity['uid_parts']:
-                origin.emit_document(url, title, uid=uid, query=names,
-                                     publisher=publisher)
-            total += 1
-        origin.log.info('Query [%s]: %s -> %s',
-                        total, entity.get('name'), names)
-
-    for address in entity['address']:
-        total = 0
-        origin.project.documents.delete(query=address)
-        term = search_term(address)
-        if term is None:
-            continue
-        term = term + '~3'
-        for url, title, publisher in search_documents(term):
-            origin.emit_document(url, title, query=address,
-                                 publisher=publisher)
-            total += 1
-        origin.log.info('Query [%s]: %s', total, address)
+    total = 0
+    query = search_entity(entity)
+    for url, title, publisher in search_documents(query):
+        origin.emit_document(entity.uid, url, title, publisher=publisher)
+        total += 1
+    origin.log.info('Query [%s]: %s -> %s', entity.name, query, total)

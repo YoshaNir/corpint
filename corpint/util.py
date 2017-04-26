@@ -12,9 +12,3 @@ def get_extensions(section):
         for ep in iter_entry_points(section):
             EXTENSIONS[section][ep.name] = ep.load()
     return EXTENSIONS[section]
-
-
-def ensure_column(table, name, type):
-    """Create a table column if it does not exist."""
-    if name not in table.columns:
-        table.create_column(name, type)

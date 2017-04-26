@@ -25,7 +25,7 @@ WEIGHTS = {
 }
 
 
-def choose_best_type(types):
+def choose_best_schema(types):
     """Given a list of types, choose the most specific one."""
     best_type, best_score = None, 0
     for value in types:
