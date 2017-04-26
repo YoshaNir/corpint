@@ -31,6 +31,11 @@ class Mapping(Base):
             self._right = Entity.get(self.right_uid)
         return self._right
 
+    def get_other(self, entity):
+        if entity.uid == self.left_uid:
+            return self.right
+        return self.left
+
     def delete(self):
         session.delete(self)
 
@@ -53,17 +58,16 @@ class Mapping(Base):
             obj.score = float(score)
         session.add(obj)
 
+        # Set entities to enabled.
         if obj.decided:
             entities = chain(
                 Entity.find_by_result(left_uid, right_uid),
                 Entity.find_by_result(right_uid, left_uid)
             )
             for entity in entities:
-                if judgement is False:
-                    # Clear out rejected results.
-                    entity.delete()
+                if obj.judgement is False:
+                    entity.active = False
                 else:
-                    # Set entities to enabled.
                     entity.active = True
         return obj
 
@@ -123,24 +127,30 @@ class Mapping(Base):
         return clusters
 
     @classmethod
-    def get_decided(cls):
-        """A set of sorted tuples representing all the decisions made.
-        This is used to avoid prompting for matches that can already be
-        inferred transitively."""
-        decided = set()
+    def get_decisions(cls):
+        """A dict representing all the decisions made and inferred
+        transitively and the resulting judgements."""
+        decided = {}
         same_as = {}
         for cluster in cls.generate_clusters():
             for uid in cluster:
                 same_as[uid] = cluster
                 for other in cluster:
-                    decided.add(cls.sort_uids(uid, other))
+                    decided[cls.sort_uids(uid, other)] = True
 
         for (a, b) in cls.find_judgements(False):
             for left in same_as.get(a, [a]):
                 for right in same_as.get(b, [b]):
-                    decided.add(cls.sort_uids(left, right))
+                    decided[cls.sort_uids(uid, other)] = False
 
         return decided
+
+    @classmethod
+    def get_decided(cls):
+        """A set of sorted tuples representing all the decisions made.
+        This is used to avoid prompting for matches that can already be
+        inferred transitively."""
+        return set(cls.get_decisions().keys())
 
     @classmethod
     def generate_scored_mappings(cls, origins=[], threshold=.5):

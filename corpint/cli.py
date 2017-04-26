@@ -5,7 +5,7 @@ from collections import defaultdict
 from itertools import combinations
 from unicodecsv import DictReader, DictWriter
 
-from corpint.core import config, project
+from corpint.core import config, project, session
 from corpint.model import Mapping, Entity
 from corpint.webui import run_webui
 from corpint.export import export_to_neo4j
@@ -40,12 +40,14 @@ def mappings_generate(threshold, origins):
 def mappings_apply():
     """Apply mapped canonical IDs to all entities."""
     Mapping.canonicalize()
+    session.commit()
 
 
 @mappings.command('cleanup')
 def mappings_cleanup():
     """Delete undecided generated mappings."""
     Mapping.cleanup()
+    session.commit()
 
 
 @mappings.command('export')

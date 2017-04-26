@@ -1,5 +1,6 @@
 from hashlib import sha1
 from normality import stringify
+from dalet import parse_country
 from sqlalchemy.ext.declarative import declarative_base
 
 Base = declarative_base()
@@ -33,6 +34,8 @@ class SchemaObject(object):
                     parsed[field].append(value)
             else:
                 value = stringify(value)
+                if field in ['country']:
+                    value = parse_country(field)
                 if value is not None:
                     parsed[field] = value
         return parsed

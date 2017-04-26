@@ -1,0 +1,56 @@
+{% macro render_mapping(mapping, entity=None) -%}
+  {% set entity = entity or mapping.left %}
+  {% if entity and mapping.get_other(entity) %}
+    <tbody>
+      <tr>
+        <td width="10%">
+          <strong>{{ ((mapping.score or 1.0) * 100) | round(1, 'floor') }}</strong>
+        </td>
+        <td width="42%">
+          <a href="{{url_for('base.entity', uid=entity.uid)}}">
+            <strong>{{ entity.name }}</strong>
+          </a>
+        <td width="42%">
+          <a href="{{url_for('base.entity', uid=mapping.get_other(entity).uid)}}">
+            <strong>{{ mapping.get_other(entity).name }}</strong>
+          </a>
+        </td>
+        <td width="1%" rowspan="{{mapping_height(entity, mapping)}}">
+          <input type="radio" name="{{mapping_key(entity, mapping)}}" value="TRUE"
+            {% if mapping_match(mapping, True, decisions) %}checked="checked"{% endif %} />
+        </td>
+        <td width="1%" rowspan="{{mapping_height(entity, mapping)}}">
+          <input type="radio" name="{{mapping_key(entity, mapping)}}" value="FALSE"
+            {% if mapping_match(mapping, False, decisions) %}checked="checked"{% endif %} />
+        </td>
+        <td width="1%" rowspan="{{mapping_height(entity, mapping)}}">
+          <input type="radio" name="{{mapping_key(entity, mapping)}}" value="NULL"
+            {% if mapping_match(mapping, None, decisions) %}checked="checked"{% endif %} />
+        </td>
+      </tr>
+      {% for label, enval, otval in mapping_compare(entity, mapping) %}
+        <tr>
+          <td>{{label}}</td>
+          <td>{{enval or ''}}</td>
+          <td>{{otval or ''}}</td>
+        </tr>
+      {% endfor %}
+      <tr>
+        <td>Source</td>
+        <td><code>{{entity.origin}}</code></td>
+        <td><code>{{mapping.get_other(entity).origin}}</code></td>
+      </tr>
+    </tbody>
+  {% endif %}
+{%- endmacro %}
+
+{% macro render_header() -%}
+  <thead>
+    <tr>
+      <th colspan="3">Are these the same?</th>
+      <th width="1%">Yes</th>
+      <th width="1%">No</th>
+      <th width="1%">Unsure</th>
+    </tr>
+  </thead>
+{%- endmacro %}

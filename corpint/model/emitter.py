@@ -93,19 +93,21 @@ class ResultEmitter(Emitter):
     """Generate entities inside a result context."""
 
     def __init__(self, origin, query_uid, match_uid):
-        self.judgement = Mapping.get_judgement(query_uid, match_uid)
+        self.mapping = Mapping.get(query_uid, match_uid)
         super(ResultEmitter, self).__init__(origin,
                                             query_uid=query_uid,
                                             match_uid=match_uid)
 
     def emit_entity(self, data):
-        if self.judgement is False:
-            return
         # Enrichment results are first held as inactive and become active only
         # once the judgement between the query and result entities is confirmed
-
         entity = super(ResultEmitter, self).emit_entity(data)
-        if self.judgement is None:
+        if (self.mapping is None) or \
+           (not self.mapping.decided) or \
+           (self.mapping.judgement is False):
+            entity.active = False
+
+        if self.mapping is None or self.mapping.judgement is None:
             entity.active = False
             if entity.uid == self.match_uid:
                 # Generate a tentative mapping.
@@ -114,19 +116,6 @@ class ResultEmitter(Emitter):
                              score=query.compare(entity))
         session.commit()
         return entity
-
-    def emit_link(self, data):
-        """Create or update a link in the context of this emitter."""
-        if self.judgement is False:
-            return
-        return super(ResultEmitter, self).emit_link(data)
-
-    def emit_document(self, entity_uid, url, title, publisher=None):
-        """Create or update a document in the context of this emitter."""
-        if self.judgement is False:
-            return
-        return super(ResultEmitter, self).emit_document(entity_uid, url, title,
-                                                        publisher=publisher)
 
     def __repr__(self):
         return '<ResultEmitter(%r, %r, %r)>' % (self.origin,

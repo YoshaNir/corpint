@@ -1,7 +1,47 @@
 {% extends "layout.html" %}
+{% import 'macros.html' as macros with context %}
 
 {% block title %}{{entity.name}}{% endblock %}
 
 {% block body %}
-  {{entity.name}}
+  <h2>
+    {{entity.name}}
+    <small>
+      <code>{{entity.origin}}</code>
+    </small>
+  </h2>
+  <hr/>
+
+  {% for (section, mappings) in sections %}
+    {% if mappings.count() %}
+      <form method="POST" action="{{url_for('base.review_post')}}">
+        <div class="panel panel-default">
+          <div class="panel-heading">
+            <h3 class="panel-title">{{section}}</h3>
+          </div>
+          <table class="table table-bordered">
+            {{ macros.render_header() }}
+            {% for mapping in mappings %}
+              {{ macros.render_mapping(mapping, entity=entity) }}
+            {% endfor %}
+          </table>
+          <div class="panel-footer">
+            <div class="pull-right">
+              <button class="btn btn-primary" type="submit"
+                      name="action" value="{{entity.uid}}">
+                Save
+              </button>
+              <button class="btn btn-success" type="submit"
+                      name="action" value="next">
+                Save &amp; next
+              </button>
+            </div>
+            <div class="clearfix"></div>
+          </div>
+        </div>
+
+
+      </form>
+    {% endif %}
+  {% endfor %}
 {% endblock %}

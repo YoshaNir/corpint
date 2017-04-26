@@ -22,12 +22,16 @@
         </div>
 
         <ul class="nav navbar-nav">
-          <li class="{% if section == 'review' %}active{% endif %}">
-            <a href="{{url_for('base.review_get')}}">Duplicates review</a>
-          </li>
-          <li class="{% if section == 'entities' %}active{% endif %}">
+          <li>
             <a href="{{url_for('base.entities')}}">Entities</a>
           </li>
+          <li>
+            <a href="{{url_for('base.review_get')}}">Review by score</a>
+          </li>
+          <li>
+            <a href="{{url_for('base.review_entity_get')}}">Review by entity</a>
+          </li>
+
         </ul>
         <form class="navbar-form navbar-right" action="{{url_for('base.entities')}}" method="GET">
           <div class="form-group">
@@ -41,6 +45,15 @@
     <div class="container">
       <div>
         {% block body %}{% endblock %}
+      </div>
+    </div>
+    <div class="container">
+      <div class="row">
+        <div class="col-md-12">
+          &copy; 2017, Organized Crime and Corruption Reporting Project
+          &middot; tech@occrp.org
+          <br/><br/><br/>
+        </div>
       </div>
     </div>
 

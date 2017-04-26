@@ -150,7 +150,7 @@ def search_officers(origin, entity):
             url = officer.get('opencorporates_url')
             emitter = origin.result(entity.uid, origin.uid(url))
             emit_officer(emitter, officer)
-        if page >= results.get('total_pages'):
+        if page >= results.get('total_pages') or page >= 5:
             return
 
 
