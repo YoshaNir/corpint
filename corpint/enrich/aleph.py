@@ -8,7 +8,7 @@ from urlparse import urljoin
 from itertools import count
 
 from corpint.core import session
-from corpint.schema import COMPANY, ORGANIZATION, PERSON, ASSET, OTHER
+from corpint.model.schema import COMPANY, ORGANIZATION, PERSON, ASSET, OTHER
 from corpint.model import Document
 
 log = logging.getLogger(__name__)

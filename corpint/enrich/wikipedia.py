@@ -3,7 +3,7 @@ from hashlib import sha1
 from pprint import pprint  # noqa
 import mwclient
 
-from corpint.schema import PERSON, OTHER
+from corpint.model.schema import PERSON, OTHER
 
 
 ORIGIN = 'wikipedia'

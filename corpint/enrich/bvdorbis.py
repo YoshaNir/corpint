@@ -5,7 +5,7 @@ from pprint import pprint  # noqa
 import zeep
 from zeep.exceptions import TransportError
 
-from corpint.schema import PERSON, COMPANY, ORGANIZATION, OTHER
+from corpint.model.schema import PERSON, COMPANY, ORGANIZATION, OTHER
 
 WSDL = 'https://webservices.bvdep.com/orbis/remoteaccess.asmx?WSDL'
 USERNAME = environ.get('ORBIS_USERNAME', 'occrp_ws')

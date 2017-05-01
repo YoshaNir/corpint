@@ -6,7 +6,7 @@ from urllib import quote_plus
 from itertools import count
 from pprint import pprint  # noqa
 
-from corpint.schema import PERSON, OTHER, ORGANIZATION, COMPANY
+from corpint.model.schema import PERSON, OTHER, ORGANIZATION, COMPANY
 
 log = logging.getLogger(__name__)
 API_KEY = environ.get('OPENCORPORATES_APIKEY')
