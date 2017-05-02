@@ -1,3 +1,4 @@
+import fingerprints
 from py2neo import Graph, Node, Relationship
 
 from corpint.core import project, config
@@ -5,6 +6,7 @@ from corpint.model import Entity, Link, Mapping, Address, Document
 
 ADDRESS = 'Address'
 DOCUMENT = 'Document'
+NAME = 'Name'
 
 
 def clear_leaf_nodes(graph, label):
@@ -30,6 +32,16 @@ def load_entities(graph):
             tx.create(node)
             for uid in entity.uids:
                 entities[uid] = node
+
+            for name in entity.names:
+                fp = fingerprints.generate(name)
+                name_node = Node(NAME, name=name, fp=fp)
+                tx.merge(name_node, NAME, 'fp')
+
+                rel = Relationship(node, 'ALIAS', name_node)
+                tx.create(rel)
+
+        clear_leaf_nodes(tx, NAME)
         tx.commit()
         return entities
     except Exception:
