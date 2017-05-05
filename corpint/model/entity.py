@@ -9,7 +9,7 @@ from dalet import parse_boolean
 from corpint.core import session, project
 from corpint.model.common import Base, SchemaObject, UID_LENGTH
 from corpint.model.schema import choose_best_schema
-from corpint.model.schema import TYPES, ASSET, PERSON
+from corpint.model.schema import TYPES, ASSET, PERSON, BANK_ACCOUNT
 from corpint.model.address import Address
 
 IDENTIFIERS = ['aleph_id', 'opencorporates_url', 'bvd_id', 'wikidata_id']
@@ -50,8 +50,8 @@ class EntityCore(SchemaObject):
             if None not in ids and len(set(ids)) == 1:
                 return 2.0
 
-        schemata = self.schema, other.schema
-        if ASSET in schemata:
+        schemata = set([self.schema, other.schema])
+        if len(schemata.intersection([BANK_ACCOUNT, ASSET])):
             return 0
 
         score = 0

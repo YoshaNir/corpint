@@ -28,7 +28,7 @@ class Emitter(object):
         for arg in args:
             arg = stringify(arg)
             if arg is None:
-                return None
+                continue
             has_args = True
             uid.update(arg.encode('utf-8'))
         if not has_args:
