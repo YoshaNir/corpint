@@ -151,11 +151,12 @@ def link_items(emitter, entity, items, summary):
                 print 'UNKOWN TYPE', [value]
         else:
             other[key] = value
-    other['uid'] = emitter.uid(other.get('bvd_id'))
-    if other['uid'] is None or other['name'] is None:
+    uid = other.get('bvd_id') or other.get('name')
+    if uid is None:
         return
+    other['uid'] = emitter.uid(uid)
     other['name'] = other['name'].replace('via its funds', '')
-    emitter.log.info("Associated [%(bvd_id)s]: %(name)s", other)
+    emitter.log.info("Associated: %(name)s", other)
     emitter.emit_entity(other)
     link['source_uid'] = entity['uid']
     link['target_uid'] = other['uid']
