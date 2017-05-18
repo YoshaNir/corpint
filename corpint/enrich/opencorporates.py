@@ -112,7 +112,8 @@ def get_company(emitter, opencorporates_url):
     if emitter.entity_exists(company_uid):
         return company_uid
     company = get_oc_api(opencorporates_url)
-    return emit_company(emitter, company)
+    if company is not None:
+        return emit_company(emitter, company)
 
 
 def get_officer(emitter, opencorporates_url):
@@ -120,7 +121,8 @@ def get_officer(emitter, opencorporates_url):
     if emitter.entity_exists(officer_uid):
         return officer_uid
     officer = get_oc_api(opencorporates_url)
-    return emit_officer(emitter, officer)
+    if office is not None:
+        return emit_officer(emitter, officer)
 
 
 def get_grouping(origin, name):
