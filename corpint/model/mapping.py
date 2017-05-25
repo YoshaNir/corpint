@@ -103,11 +103,11 @@ class Mapping(Base):
             yield cls.sort_uids(uida, uidb)
 
     @classmethod
-    def find_decided(cls):
-        """Find entity IDs linked by judgements of a particular type."""
+    def find(cls, decided):
+        """Find entity IDs linked by all, or only decided, judgments."""
         q = session.query(cls)
         q = q.filter(cls.project == project.name)
-        q = q.filter(cls.decided == True)  # noqa
+        q = q.filter(cls.decided == decided)  # noqa
         return q
 
     @classmethod

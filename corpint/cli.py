@@ -52,11 +52,12 @@ def mappings_cleanup():
 
 @mappings.command('export')
 @click.argument('file', type=click.File('wb'))
-def mappings_export(file):
-    """Export decided mappings to a CSV file."""
+@click.option('--decided/--undecided', default=True)
+def mappings_export(file, decided):
+    """Export mappings to a CSV file."""
     writer = DictWriter(file, fieldnames=['left', 'right', 'judgement'])
     writer.writeheader()
-    for mapping in Mapping.find_decided():
+    for mapping in Mapping.find(decided):
         writer.writerow({
             'left': mapping.left_uid,
             'right': mapping.right_uid,
@@ -134,11 +135,12 @@ def export():
 
 @export.command('neo4j')
 @click.option('neo4j_uri', '--url', '-u', default=None)
-def export_neo4j(neo4j_uri):
+@click.option('--decided/--undecided', default=True)
+def export_neo4j(neo4j_uri, decided):
     """Load the graph to Neo4J for navigation."""
     if neo4j_uri is not None:
         config.neo4j_uri = neo4j_uri
-    export_to_neo4j()
+    export_to_neo4j(decided)
 
 
 def main():

@@ -68,11 +68,12 @@ def load_links(graph, entities):
         raise
 
 
-def load_mappings(graph, entities):
-    """Load mappings which are decided but unsure."""
+def load_mappings(graph, entities, decided):
+    """Load mappings which are decided but unsure, or undecided."""
     tx = graph.begin()
-    q = Mapping.find_decided()
-    q = q.filter(Mapping.judgement == None)  # noqa
+    q = Mapping.find(decided)
+    if decided:
+        q = q.filter(Mapping.judgement == None)  # noqa
     project.log.info("Loading %s mappings...", q.count())
     try:
         for mapping in q:
@@ -141,7 +142,7 @@ def load_documents(graph, entities):
         raise
 
 
-def export_to_neo4j():
+def export_to_neo4j(decided):
     if config.neo4j_uri is None:
         project.log.error("No $NEO4J_URI set, cannot load graph.")
         return
@@ -153,6 +154,6 @@ def export_to_neo4j():
     Mapping.canonicalize()
     entities = load_entities(graph)
     load_links(graph, entities)
-    load_mappings(graph, entities)
+    load_mappings(graph, entities, decided)
     load_addresses(graph, entities)
     load_documents(graph, entities)
