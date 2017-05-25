@@ -71,7 +71,7 @@ def load_links(graph, entities):
 def load_mappings(graph, entities, decided):
     """Load mappings which are decided but unsure, or undecided."""
     tx = graph.begin()
-    q = Mapping.find(decided)
+    q = Mapping.find_by_decision(decided)
     if decided:
         q = q.filter(Mapping.judgement == None)  # noqa
     project.log.info("Loading %s mappings...", q.count())

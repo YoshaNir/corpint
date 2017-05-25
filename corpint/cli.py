@@ -57,7 +57,7 @@ def mappings_export(file, decided):
     """Export mappings to a CSV file."""
     writer = DictWriter(file, fieldnames=['left', 'right', 'judgement'])
     writer.writeheader()
-    for mapping in Mapping.find(decided):
+    for mapping in Mapping.find_by_decision(decided):
         writer.writerow({
             'left': mapping.left_uid,
             'right': mapping.right_uid,

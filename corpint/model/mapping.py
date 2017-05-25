@@ -103,7 +103,7 @@ class Mapping(Base):
             yield cls.sort_uids(uida, uidb)
 
     @classmethod
-    def find(cls, decided):
+    def find_by_decision(cls, decided):
         """Find entity IDs linked by all, or only decided, judgments."""
         q = session.query(cls)
         q = q.filter(cls.project == project.name)
