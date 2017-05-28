@@ -35,7 +35,7 @@ class SchemaObject(object):
             else:
                 value = stringify(value)
                 if field in ['country']:
-                    value = parse_country(field)
+                    value = parse_country(value)
                 if value is not None:
                     parsed[field] = value
         return parsed

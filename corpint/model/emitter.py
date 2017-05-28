@@ -112,8 +112,9 @@ class ResultEmitter(Emitter):
             if entity.uid == self.match_uid:
                 # Generate a tentative mapping.
                 query = Entity.get(self.query_uid)
-                Mapping.save(self.match_uid, self.query_uid, None,
-                             score=query.compare(entity))
+                if query is not None:
+                    Mapping.save(self.match_uid, self.query_uid, None,
+                                 score=query.compare(entity))
         session.commit()
         return entity
 
