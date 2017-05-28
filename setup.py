@@ -38,7 +38,8 @@ setup(
         'urlnorm',  # document crawler
         'py2neo',
         'click',
-        'Flask'
+        'Flask',
+        'openpyxl'
     ],
     test_suite='nose.collector',
     entry_points={

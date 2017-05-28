@@ -8,7 +8,7 @@ from unicodecsv import DictReader, DictWriter
 from corpint.core import config, project, session
 from corpint.model import Mapping, Entity
 from corpint.webui import run_webui
-from corpint.export import export_to_neo4j
+from corpint.export import export_to_neo4j, export_to_xlsx, export_to_csv
 from corpint.enrich import get_enrichers
 
 
@@ -141,6 +141,26 @@ def export_neo4j(neo4j_uri, decided):
     if neo4j_uri is not None:
         config.neo4j_uri = neo4j_uri
     export_to_neo4j(decided)
+
+
+@export.command('xlsx')
+@click.argument('filename', default='corpint.xlsx')
+def export_xlsx(filename):
+    """Export current DB to xlsx file."""
+    export_to_xlsx(filename)
+
+
+@export.command('csv')
+@click.argument('relation', default=None)
+@click.option('--filename', '-f', default='export.csv')
+def export_xlsx(relation, filename):
+    """Export current DB to xlsx file."""
+    if relation is None:
+        system.log.ifno('A database relation must be specified.')
+        return
+    export_to_csv(relation, filename)
+
+
 
 
 def main():

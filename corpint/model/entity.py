@@ -233,5 +233,11 @@ class Entity(EntityCore, Base):
         if len(entities):
             yield CompositeEntity(entities)
 
+    @classmethod
+    def find(cls):
+        q = session.query(cls)
+        q = q.filter(cls.project == project.name)
+        return q
+
     def __repr__(self):
         return '<Entity(%r)>' % self.uid

@@ -37,7 +37,7 @@ class Link(SchemaObject, Base):
             obj.target_uid = target_uid
             obj.target_canonical_uid = target_uid
         obj.schema = data.pop('schema', None)
-        obj.data = obj.parse_data(data)
+        obj.data = data
         session.add(obj)
         return obj
 
